@@ -1,0 +1,72 @@
+{\rtf1\ansi\ansicpg1252\cocoartf949\cocoasubrtf540
+{\fonttbl\f0\fnil\fcharset0 Monaco;}
+{\colortbl;\red255\green255\blue255;}
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\ql\qnatural\pardirnatural
+
+\f0\fs20 \cf0 Color Game:\
+\
+Objective:\
+	Illuminate the "goal" to a certain degree of a certain color in the spectrum\
+		easy might be a white or black objective\
+		medium might be bright color of a small spectrum (e.g. yellow)\
+		difficult might be a combination of 2 colors on different ends of the spectrum\
+\
+Play:\
+	Players get n "mirrors" with which to redirect the light in a 2d or 3d environment\
+	There is only a certain amount of light that flows \
+	The player initiates the flow after viewing the board\
+\
+Players:\
+	Turn based. Player 1 can interfere with player 2 by intercepting their light, or "negating" their light\
+		\
+Obstacles:\
+	Color is boosted by like-color and negated by unlike color\
+	There are non-reflective walls (3d env. might make them go up and down)\
+	There are black-holes\
+\
+Mirror Variations (should all be useful in SOME situations):\
+	Reflectivity (0-1)\
+	Inversion\
+	Scattering\
+	Condenser (turns light into laser beams to destroy obstacles)\
+	Pivoting mirror \
+	prism\
+	\
+Light particles:\
+	Color\
+	Intensity (this can be lost by)\
+	Velocity (take a look at robert's classes)	\
+\
+Goals:\
+	Average color (must have a decay)\
+	Must be illuminated close to certain color/intensity for a certain amount of time\
+	The size of the goal influences how easy it is to light up\
+\
+Questions:\
+	How do we calculate the average color of the goal? How do we know if a mixed color has been achieved?\
+	How does the user interact with it?\
+		Can we incorp. accel. data? Orientation? Touch?\
+		Using orientation or accel might allow us to rotate a 2d object in 3d space\
+	What does it look like?\
+	\
+Collision Detection:\
+	Test 1:\
+		1) Check if the particle is inside the triangle using boundary detection\
+			http://stackoverflow.com/questions/217578/point-in-polygon-aka-hit-test/218081#218081\
+		2) If the particle is inside, determine which side it traveled through using line instersection\
+			http://alienryderflex.com/intersect/\
+\
+\
+	http://web.me.com/smaurice/AppleCoder/iPhone_OpenGL/Entries/2009/7/27_OpenGL_ES_17.5_-_Collision_Detection_2__Moller_%26_Trumbore%E2%80%99s_Fast_Triangle_Ray_Intersect.html\
+	(3-d)\
+	http://www.metanetsoftware.com/technique/tutorialA.html (a little dense) \
+	\
+	http://forums.xna.com/forums/p/27271/150313.aspx (fairly simple)\
+\
+	Collision detection doesnt have to happen on a particle-by-particle basis, rather on a mirror by mirror basis\
+		Option 1) After a particle moves, it updates it's grid box. if it's in an occupied grid, it adds itself to that boxes' mirrors' "check" list\
+		Option 2) \
+	If a particle is within the mirror, affect it's trajectory\
+	\'95 Boundary detection \
+		- Only works if the particles are moving slowly, since it doesn't take into account the particles imaginary path\
+		- Can't help with reflection}
