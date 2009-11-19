@@ -8,9 +8,123 @@
 
 #import "EAGLView.h"
 #import "Photon.h"
+#import "Vec3f.h"
+#import "Triangle.h"
 
 #define USE_DEPTH_BUFFER 0
 #define DEGREES_TO_RADIANS(__ANGLE) ((__ANGLE) / 180.0 * M_PI)
+
+#pragma mark Collision detection
+
+BOOL areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
+					 float v2x1, float v2y1, float v2x2, float v2y2) 
+{
+	float a, b, c, tx, ty;
+	float d1, d2, hd;
+	float ix, iy;
+	float r;
+	
+	//get tangent vector for line 1
+	tx = v1x2 - v1x1;
+	ty = v1y2 - v1y1;
+	
+	//get equation for line 1
+	a = -ty;
+	b = tx;
+	c = - v1x1*a - v1y1*b;
+	
+	//get distances from line for line 2
+	d1 = a*v2x1 + b*v2y1 + c;
+	d2 = a*v2x2 + b*v2y2 + c;
+	
+	if(d1 > 0 && d2 > 0) return NO;
+	if(d1 < 0 && d2 < 0) return NO;
+	
+	if(d1 || d2)
+	{
+		//find intersection, discover if it is within line segment
+		
+		r = d1 / (d2 + d1);
+		ix = v2x1 + r*(v2x2-v2x1);
+		iy = v2y1 + r*(v2y2-v2y1);
+		
+		if(ix >= v1x1 && ix <= v1x2 && iy >= v1y1 && iy <= v1y2) {
+			return YES; 
+		}
+		return NO;
+	}
+	else
+	{
+		//find out of the vectors overlap
+		
+		hd = tx*tx + ty*ty;
+		d1 = tx*(v2x1-v1x1) + ty*(v2y1-v1y1);
+		d2 = tx*(v2x2-v1x1) + ty*(v2y2-v1y1);
+		
+		if(d1 < 0 && d2 < 0) return NO;
+		if(d1 > hd && d2 > hd) return NO;
+		
+		return YES;
+	}
+}	
+
+int isPhotonInPolysWithCount(Photon *photon, GLfloat *polys, int indexCount)
+{
+	for(int i=0; i<indexCount; i++){
+		GLfloat Xmin = 10000.0;
+		GLfloat Xmax = -10000.0;
+		GLfloat Ymin = 10000.0;
+		GLfloat Ymax = -10000.0;
+		for(int p=0;p<3;p++){
+			GLfloat pointX = polys[i++];
+			GLfloat pointY = polys[i++];
+			GLfloat pointZ = polys[i++];
+			//NSLog(@"pointX: %f pointY: %f", pointX, pointY);
+			if(pointX > Xmax) Xmax = pointX;
+			if(pointX < Xmin) Xmin = pointX;
+			if(pointY > Ymax) Ymax = pointY;
+			if(pointY < Ymin) Ymin = pointY;
+		}		
+		// p is your point, p.x is the x coord, p.y is the y coord
+		if (photon.x < Xmin || photon.x > Xmax || photon.y < Ymin || photon.y > Ymax) {
+			// Definitely not within the polygon!
+			// Do nothing
+		}else{
+			// Maybe an intersection
+			// return indexCount/i;
+			float e = ((Xmax - Xmin) / 100);
+			// photon coords
+
+			// TODO: Make this a true ray based on the position, velocity and trajectory 
+			//float v1x1 = Xmin - e;
+			//float v1y1 = photon.y;
+			float v1x1 = photon.x;
+			float v1y1 = Ymin - e;
+			float v1x2 = photon.x;
+			float v1y2 = photon.y;
+			
+			// for each side
+			for(int s=0; s<3 ;s++){
+
+				float v2x1 = polys[3*s];
+				float v2y1 = polys[3*s + 1];
+				float v2x2 = polys[(3*s + 3) % 9];
+				float v2y2 = polys[(3*s + 4) % 9];			
+			
+				// Check photon path (line) against triangle lines
+				BOOL intersection = areIntersecting(v1x1, v1y1, v1x2, v1y2,
+													v2x1, v2y1, v2x2, v2y2);
+				if(intersection){
+					NSLog(@"Intersection on side: %i", s);
+					NSLog(@"v2x1 : %f v2y1 : %f v2x2 : %f v2y2 : %f", v2x1, v2y1, v2x2, v2y2);
+					return indexCount / i;
+				}
+			}
+		}
+	}	
+	return 0;
+}
+
 
 // A class extension to declare private methods
 @interface EAGLView ()
@@ -18,9 +132,10 @@
 @property (nonatomic, retain) EAGLContext *context;
 @property (nonatomic, assign) NSTimer *animationTimer;
 
-- (void)perspectiveFov:(float)fov aspect:(float)aspect zNear:(float)zNear zFar:(float)zFar;
-- (void)gluLookAtEye:(Vec3f*)eye center:(Vec3f*)center up:(Vec3f*)up;
-- (Vec3f*)crossProduct:(Vec3f*)v1 with:(Vec3f*)v2;
+//- (void)perspectiveFov:(float)fov aspect:(float)aspect zNear:(float)zNear zFar:(float)zFar;
+//- (void)gluLookAtEye:(Vec3f*)eye center:(Vec3f*)center up:(Vec3f*)up;
+//- (Vec3f*)crossProduct:(Vec3f*)v1 with:(Vec3f*)v2;
+//- (int)isPhotonInPolys:(GLfloat *)polys count:(int)indexCount;
 - (BOOL) createFramebuffer;
 - (void) destroyFramebuffer;
 - (void) beginGLDraw;
@@ -75,12 +190,52 @@
 			displayLinkSupported = TRUE;
 		
 		[self setupView];
-		
-		photon = [[Photon alloc] initWithX:-159.0 y:-239.0 z:0.0];
-		
+		[self setupScene];
+				
     }
 	
     return self;
+}
+
+- (void)setupScene
+{	
+	lightPoints = [[NSMutableArray alloc] initWithCapacity:2];
+	[lightPoints addObject:[[[Vec3f alloc] initWithX:-120.0 y:-180.0 z:0.0] autorelease]];
+	[lightPoints addObject:[[[Vec3f alloc] initWithX:50.0 y:-20.0 z:0.0] autorelease]];
+	
+	obstructions = [[NSMutableArray alloc] initWithCapacity:1];
+	[obstructions addObject:[[Triangle alloc] initWithAx:0.0 aY:-60.0 aZ:0.0 bx:-10.0 bY:-80.0 bZ:0.0 cx:10.0 cY:-80.0 cZ:0.0]];	
+	
+	[self checkForObstructions];
+}
+
+- (void)checkForObstructions
+{
+	for(Triangle *triangle in obstructions){
+		// Only check through the second to last point, since the last 
+		// point cant connect with another point to form a line 
+		for(int i=0;i<[lightPoints count]-1; i++){
+			// Here's our line
+			Vec3f *v1 = [lightPoints objectAtIndex:i];
+			Vec3f *v2 = [lightPoints objectAtIndex:i+1];
+			// Iterate over every line to see if there is an intersection.
+			// If it overlaps ANY line, we can break.
+			NSArray *points = [triangle points];
+			int pointCount = [points count];
+			for(int l=0;l<pointCount;l++){
+				// Since we are assuming it's a polygon, we can circle back around and connect the first and the last point
+				Vec3f *v3 = [points objectAtIndex:l%pointCount];
+				Vec3f *v4 = [points objectAtIndex:(l+1)%pointCount];
+				if(areIntersecting(v1.x, v1.y, v2.x, v2.y,
+								   v3.x, v3.y, v4.x, v4.y)){
+					NSLog(@"There is an intersection between line %i and side %i", i, l);
+					NSLog(@"x1: %f y1: %f x2: %f y2: %f x3: %f y3: %f x4: %f y4: %f", 
+						  v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, v4.x, v4.y);
+					break;
+				}
+			}
+		}
+	}
 }
 
 #pragma mark Drawing
@@ -98,6 +253,7 @@
 {
 	[self beginGLDraw];
 	
+/*
 	int numParticles = 1; // [particles count];
 
 	GLfloat particles[3 * numParticles * 4]; // 4 for the particle color
@@ -117,8 +273,8 @@
 		particles[ particleIndex++ ] = 0.0; // b
 		particles[ particleIndex++ ] = 1.0; // a
 	}
-	
-	GLfloat box[] = {
+	*/
+/*	GLfloat box[] = {
 		-160.0, 240.0,	0.0, // top left
 		-160.0, -240.0, 0.0, // bottom left
 		160.0, -240.0,	0.0, // bottom right
@@ -130,27 +286,78 @@
 		0.0, 1.0, 1.0, 1.0, // bottom left
 		0.0, 1.0, 0.0, 1.0, // bottom right
 		0.0, 1.0, 1.0, 1.0, // top right
-	};
+	};*/
+	
+	//int numPoints = sizeof(lightPoints) / sizeof(CGPoint);
+	int numPoints = [lightPoints count];
+	GLfloat points[(3 * numPoints) + (4 * numPoints)];
+	//GLfloat points[] = {-12.0, 10.0, 0};
+
+	int pointIndex = 0;
+	for(Vec3f *v in lightPoints){
+	//for(int i=0; i<numPoints; i++){
+		// The point's position in space
+		points[ pointIndex++ ] = v.x;
+		points[ pointIndex++ ] = v.y;
+		points[ pointIndex++ ] = v.z;	 
 		
-	// 1 Obstruction: Just a simple triangle
+		points[ pointIndex++ ] = 1.0; // red particles
+		points[ pointIndex++ ] = 0.0;
+		points[ pointIndex++ ] = 0.0;
+		points[ pointIndex++ ] = 1.0;
+	}		
+	
+	//GLfloat lineColor[] = {1.0, 1.0, 0.0, 1.0}; // Yellow lines 
+
+	 // 1 Obstruction: Just a simple triangle
 	// All lines are in red. 
 	// NOTE: Should the color of the lines be stripped out alltogether? 
-/*	const GLfloat obstructions[] = {
-		0.0, 1.0, 0.0,   1.0, 1.0, 0.0, 1.0,
-		-1.0, 0.0, 0.0,  1.0, 1.0, 1.0, 1.0,
-		1.0, 0.0, 0.0,   1.0, 0.0, 0.0, 1.0,
-	};	*/
+	pointIndex = 0;
+	int numObstructions = [obstructions count];
+	GLfloat obstructionPoints[3 * 3 * numObstructions];
+	for(Triangle *triangle in obstructions){
+		obstructionPoints[pointIndex++] = triangle.a.x;
+		obstructionPoints[pointIndex++] = triangle.a.y;
+		obstructionPoints[pointIndex++] = triangle.a.z;
+
+		obstructionPoints[pointIndex++] = triangle.b.x;
+		obstructionPoints[pointIndex++] = triangle.b.y;
+		obstructionPoints[pointIndex++] = triangle.b.z;
+		
+		obstructionPoints[pointIndex++] = triangle.c.x;
+		obstructionPoints[pointIndex++] = triangle.c.y;
+		obstructionPoints[pointIndex++] = triangle.c.z;		
+	}
 	
+/*	GLfloat obstructionPoints[] = {
+		0.0, -60.0, 0.0,//   0.0, 1.0, 0.0, 1.0,
+		-10.0, -80.0, 0.0,//  0.0, 1.0, 0.0, 1.0,
+		10.0, -80.0, 0.0,//   0.0, 1.0, 0.0, 1.0,
+	};*/
+	
+	/*
+	GLfloat obstructionsColors[] = {
+		0.0, 1.0, 0.0, 1.0,
+		0.0, 1.0, 0.0, 1.0,
+		0.0, 1.0, 0.0, 1.0,
+	};
+	 */
 	// Draw the box
-	glPushMatrix();
+/*	glPushMatrix();
 	{
 		//glTranslatef(2.0, 0.0, -4.0);		
 		glVertexPointer(3, GL_FLOAT, 0, box);
 		glColorPointer(4, GL_FLOAT, 0, boxColors);
 		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 	}
-	glPopMatrix();
+	glPopMatrix();*/
 	
+/*	int intersect = isPhotonInPolysWithCount(photon, obstructions, 9);
+	if(intersect){ //;// using an int is faster than calculating it
+		NSLog(@"possible intersection with triangle: %i", intersect);
+	}
+*/
+/*	
 	// Draw the particles
 	glPushMatrix();	
 	{		
@@ -164,22 +371,49 @@
 		glDrawArrays(GL_POINTS, 0, numParticles);		
 	}
 	glPopMatrix();
+*/
+	// Draw the points
+
+	glEnableClientState(GL_VERTEX_ARRAY);
+	
+	glPushMatrix();	
+	{				
+		glColor4f( 1.0, 0.0, 0.0, 1.0 );
+		glPointSize(8.0);		
+		glEnable(GL_POINT_SMOOTH);
+		glVertexPointer(3, GL_FLOAT, 28, points);
+		//glColorPointer(4, GL_FLOAT, 28, &points[3]);
+		glDrawArrays(GL_POINTS, 0, numPoints);
+		
+		glColor4f( 1.0, 1.0, 0.0, 1.0 );
+		glEnable(GL_LINE_SMOOTH);
+		//glColorPointer(4, GL_FLOAT, 0, lineColor);
+		glDrawArrays(GL_LINES, 0, numPoints);
+		
+	}
+	glPopMatrix();
+
 
 	// Draw the obstructions	
-	/*glPushMatrix();
-	{
-		// glTranslatef(2.0, 0.0, -4.0);
-		//glEnable(GL_LINE_SMOOTH);
-		//glVertexPointer(3, GL_FLOAT, 28, obstructions);
-		//glColorPointer(4, GL_FLOAT, 28, &obstructions[3]);
-		//glDrawArrays(GL_LINE_LOOP, 0, 4);		
-	}
-	glPopMatrix();*/
 	
+	glPushMatrix();
+	{		
+		// In green!
+		glColor4f( 0.0, 1.0, 0.0, 1.0 );
+		//glEnableClientState(GL_COLOR_ARRAY);
+		glEnable(GL_LINE_SMOOTH);
+		glVertexPointer(3, GL_FLOAT, 0, obstructionPoints);
+		//glColorPointer(4, GL_FLOAT, 0, obstructionsColors);
+		glDrawArrays(GL_LINE_LOOP, 0, numObstructions * 3);
+	}
+	glPopMatrix();
+		
+	
+
 	[self finishGLDraw];
 
 }
-		
+
 - (void)finishGLDraw
 {
 	glBindRenderbufferOES(GL_RENDERBUFFER_OES, viewRenderbuffer);
@@ -317,7 +551,6 @@
 	
     glMatrixMode(GL_PROJECTION);
     size = zNear * tanf(DEGREES_TO_RADIANS(fieldOfView) / 2.0);
-	NSLog(@"size: %f", size);
 	
 	// This give us the size of the iPhone display
     CGRect rect = self.bounds;
@@ -429,7 +662,8 @@
     }
     
     [context release];  
-	[photon release];
+	//[photon release];
+	[lightPoints release];
 	
     [super dealloc];
 }

@@ -33,9 +33,9 @@
 	//GLuint textures[4];    
     EAGLContext *context;    
     GLuint viewRenderbuffer, viewFramebuffer, depthRenderbuffer;
-	
-	Photon *photon;
-	
+
+	NSMutableArray	*lightPoints;
+	NSMutableArray	*obstructions;
 }
 
 @property (readonly, nonatomic, getter=isAnimating) BOOL animating;
@@ -45,6 +45,8 @@
 - (void)stopAnimation;
 - (void)drawView:(id)sender;
 - (void)setupView;
+- (void)setupScene;
+- (void)checkForObstructions;
 - (void)checkGLError:(BOOL)visibleCheck;
 
 @end
