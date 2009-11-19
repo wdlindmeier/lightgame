@@ -16,7 +16,7 @@
 
 #pragma mark Collision detection
 
-BOOL areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
+Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 					 float v2x1, float v2y1, float v2x2, float v2y2) 
 {
 	float a, b, c, tx, ty;
@@ -48,10 +48,11 @@ BOOL areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 		ix = v2x1 + r*(v2x2-v2x1);
 		iy = v2y1 + r*(v2y2-v2y1);
 		
-		if(ix >= v1x1 && ix <= v1x2 && iy >= v1y1 && iy <= v1y2) {
-			return YES; 
+		if(ix >= v1x1 && ix <= v1x2 && iy >= v1y1 && iy <= v1y2) {			
+			return [[[Vec3f alloc] initWithX:ix y:iy z:0.0] autorelease];
 		}
-		return NO;
+		
+		return nil;
 	}
 	else
 	{
@@ -61,10 +62,12 @@ BOOL areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 		d1 = tx*(v2x1-v1x1) + ty*(v2y1-v1y1);
 		d2 = tx*(v2x2-v1x1) + ty*(v2y2-v1y1);
 		
-		if(d1 < 0 && d2 < 0) return NO;
-		if(d1 > hd && d2 > hd) return NO;
-		
-		return YES;
+		if(d1 < 0 && d2 < 0) return nil;
+		if(d1 > hd && d2 > hd) return nil;
+
+		// NOTE: This is just a guess
+		return (d1 >= 0 && d1 <= hd) ? [[[Vec3f alloc] initWithX:v1x1 y:v1y1 z:0.0] autorelease] : 
+									   [[[Vec3f alloc] initWithX:v1x2 y:v1y2 z:0.0] autorelease];
 	}
 }	
 
@@ -200,8 +203,9 @@ int isPhotonInPolysWithCount(Photon *photon, GLfloat *polys, int indexCount)
 - (void)setupScene
 {	
 	lightPoints = [[NSMutableArray alloc] initWithCapacity:2];
-	[lightPoints addObject:[[[Vec3f alloc] initWithX:-120.0 y:-180.0 z:0.0] autorelease]];
+	[lightPoints addObject:[[[Vec3f alloc] initWithX:-83.0 y:180.0 z:0.0] autorelease]];
 	[lightPoints addObject:[[[Vec3f alloc] initWithX:50.0 y:-20.0 z:0.0] autorelease]];
+	[lightPoints addObject:[[[Vec3f alloc] initWithX:10.0 y:-80.0 z:0.0] autorelease]];
 	
 	obstructions = [[NSMutableArray alloc] initWithCapacity:1];
 	[obstructions addObject:[[Triangle alloc] initWithAx:0.0 aY:-60.0 aZ:0.0 bx:-10.0 bY:-80.0 bZ:0.0 cx:10.0 cY:-80.0 cZ:0.0]];	
@@ -226,11 +230,12 @@ int isPhotonInPolysWithCount(Photon *photon, GLfloat *polys, int indexCount)
 				// Since we are assuming it's a polygon, we can circle back around and connect the first and the last point
 				Vec3f *v3 = [points objectAtIndex:l%pointCount];
 				Vec3f *v4 = [points objectAtIndex:(l+1)%pointCount];
-				if(areIntersecting(v1.x, v1.y, v2.x, v2.y,
-								   v3.x, v3.y, v4.x, v4.y)){
-					NSLog(@"There is an intersection between line %i and side %i", i, l);
-					NSLog(@"x1: %f y1: %f x2: %f y2: %f x3: %f y3: %f x4: %f y4: %f", 
-						  v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, v4.x, v4.y);
+				Vec3f *intersectPoint = areIntersecting(v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, v4.x, v4.y);
+				if(intersectPoint){
+					//NSLog(@"There is an intersection between line %i and side %i", i, l);
+					//NSLog(@"x1: %f y1: %f x2: %f y2: %f x3: %f y3: %f x4: %f y4: %f", 
+						  //v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, v4.x, v4.y);
+					NSLog(@"Intersection AT %f %f", intersectPoint.x, intersectPoint.y);
 					break;
 				}
 			}
@@ -388,7 +393,7 @@ int isPhotonInPolysWithCount(Photon *photon, GLfloat *polys, int indexCount)
 		glColor4f( 1.0, 1.0, 0.0, 1.0 );
 		glEnable(GL_LINE_SMOOTH);
 		//glColorPointer(4, GL_FLOAT, 0, lineColor);
-		glDrawArrays(GL_LINES, 0, numPoints);
+		glDrawArrays(GL_LINE_STRIP, 0, numPoints);
 		
 	}
 	glPopMatrix();
