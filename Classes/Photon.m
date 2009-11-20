@@ -10,14 +10,7 @@
 
 @implementation Photon
 
-@synthesize x, y, z, velocity, direction;
-
-#pragma mark Movement
-
-// TODO: Stick the movement code in here
-- (void)move
-{
-}
+@synthesize angle;
 
 #pragma mark Memory 
 

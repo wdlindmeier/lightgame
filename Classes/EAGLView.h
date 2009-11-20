@@ -46,7 +46,6 @@
 - (void)drawView:(id)sender;
 - (void)setupView;
 - (void)setupScene;
-- (void)checkForObstructions;
 - (void)checkGLError:(BOOL)visibleCheck;
 
 @end

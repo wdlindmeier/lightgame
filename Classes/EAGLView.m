@@ -13,119 +13,89 @@
 
 #define USE_DEPTH_BUFFER 0
 #define DEGREES_TO_RADIANS(__ANGLE) ((__ANGLE) / 180.0 * M_PI)
+#define ANGLE_TO_DEGREES(__ANGLE) ((__ANGLE) * 2 * M_PI / 360.0) // Same thing?
 
 #pragma mark Collision detection
 
+/* 
+ * check_lines:
+ * This is based off an explanation and expanded math presented by Paul Bourke:
+ *
+ * It takes two lines as inputs and returns 1 if they intersect, 0 if they do
+ * not.  hitp returns the point where the two lines intersected.  
+ *
+ * This function expects integer value inputs and stores an integer value
+ * in hitp if the two lines interesect.  The internal calculations are fixed 
+ * point with a 14 bit fractional precision for processors without floating
+ * point units.
+ */
+//int check_lines(line *line1, line *line2, point *hitp)
 Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
-					 float v2x1, float v2y1, float v2x2, float v2y2) 
+						float v2x1, float v2y1, float v2x2, float v2y2) 
 {
-	float a, b, c, tx, ty;
-	float d1, d2, hd;
-	float ix, iy;
-	float r;
+    /* Introduction:
+     * This code is based on the solution of these two input equations:
+     *  Pa = P1 + ua (P2-P1)
+     *  Pb = P3 + ub (P4-P3)
+     *
+     * Where line one is composed of points P1 and P2 and line two is composed
+     *  of points P3 and P4.
+     *
+     * ua/b is the fractional value you can multiple the x and y legs of the
+     *  triangle formed by each line to find a point on the line.
+     *
+     * The two equations can be expanded to their x/y components:
+     *  Pa.x = p1.x + ua(p2.x - p1.x) 
+     *  Pa.y = p1.y + ua(p2.y - p1.y) 
+     *
+     *  Pb.x = p3.x + ub(p4.x - p3.x)
+     *  Pb.y = p3.y + ub(p4.y - p3.y)
+     *
+     * When Pa.x == Pb.x and Pa.y == Pb.y the lines intersect so you can come 
+     *  up with two equations (one for x and one for y):
+     *
+     * p1.x + ua(p2.x - p1.x) = p3.x + ub(p4.x - p3.x)
+     * p1.y + ua(p2.y - p1.y) = p3.y + ub(p4.y - p3.y)
+     *
+     * ua and ub can then be individually solved for.  This results in the
+     *  equations used in the following code.
+     */
 	
-	//get tangent vector for line 1
-	tx = v1x2 - v1x1;
-	ty = v1y2 - v1y1;
+    /* Denominator for ua and ub are the same so store this calculation */
+    int d   =   (v2y2 - v2y1)*(v1x2-v1x1) - (v2x2 - v2x1)*(v1y2-v1y1);
 	
-	//get equation for line 1
-	a = -ty;
-	b = tx;
-	c = - v1x1*a - v1y1*b;
+    /* n_a and n_b are calculated as seperate values for readability */
+    int n_a =   (v2x2 - v2x1)*(v1y1-v2y1) - (v2y2 - v2y1)*(v1x1-v2x1);
 	
-	//get distances from line for line 2
-	d1 = a*v2x1 + b*v2y1 + c;
-	d2 = a*v2x2 + b*v2y2 + c;
+    int n_b =   (v1x2 - v1x1)*(v1y1 - v2y1) - (v1y2 - v1y1)*(v1x1 - v2x1);
 	
-	if(d1 > 0 && d2 > 0) return NO;
-	if(d1 < 0 && d2 < 0) return NO;
+    /* Make sure there is not a division by zero - this also indicates that
+     * the lines are parallel.  
+     *
+     * If n_a and n_b were both equal to zero the lines would be on top of each 
+     * other (coincidental).  This check is not done because it is not 
+     * necessary for this implementation (the parallel check accounts for this).
+     */
+    if(d == 0)
+        return nil;
 	
-	if(d1 || d2)
-	{
-		//find intersection, discover if it is within line segment
-		
-		r = d1 / (d2 + d1);
-		ix = v2x1 + r*(v2x2-v2x1);
-		iy = v2y1 + r*(v2y2-v2y1);
-		
-		if(ix >= v1x1 && ix <= v1x2 && iy >= v1y1 && iy <= v1y2) {			
-			return [[[Vec3f alloc] initWithX:ix y:iy z:0.0] autorelease];
-		}
-		
-		return nil;
-	}
-	else
-	{
-		//find out of the vectors overlap
-		
-		hd = tx*tx + ty*ty;
-		d1 = tx*(v2x1-v1x1) + ty*(v2y1-v1y1);
-		d2 = tx*(v2x2-v1x1) + ty*(v2y2-v1y1);
-		
-		if(d1 < 0 && d2 < 0) return nil;
-		if(d1 > hd && d2 > hd) return nil;
-
-		// NOTE: This is just a guess
-		return (d1 >= 0 && d1 <= hd) ? [[[Vec3f alloc] initWithX:v1x1 y:v1y1 z:0.0] autorelease] : 
-									   [[[Vec3f alloc] initWithX:v1x2 y:v1y2 z:0.0] autorelease];
-	}
-}	
-
-int isPhotonInPolysWithCount(Photon *photon, GLfloat *polys, int indexCount)
-{
-	for(int i=0; i<indexCount; i++){
-		GLfloat Xmin = 10000.0;
-		GLfloat Xmax = -10000.0;
-		GLfloat Ymin = 10000.0;
-		GLfloat Ymax = -10000.0;
-		for(int p=0;p<3;p++){
-			GLfloat pointX = polys[i++];
-			GLfloat pointY = polys[i++];
-			GLfloat pointZ = polys[i++];
-			//NSLog(@"pointX: %f pointY: %f", pointX, pointY);
-			if(pointX > Xmax) Xmax = pointX;
-			if(pointX < Xmin) Xmin = pointX;
-			if(pointY > Ymax) Ymax = pointY;
-			if(pointY < Ymin) Ymin = pointY;
-		}		
-		// p is your point, p.x is the x coord, p.y is the y coord
-		if (photon.x < Xmin || photon.x > Xmax || photon.y < Ymin || photon.y > Ymax) {
-			// Definitely not within the polygon!
-			// Do nothing
-		}else{
-			// Maybe an intersection
-			// return indexCount/i;
-			float e = ((Xmax - Xmin) / 100);
-			// photon coords
-
-			// TODO: Make this a true ray based on the position, velocity and trajectory 
-			//float v1x1 = Xmin - e;
-			//float v1y1 = photon.y;
-			float v1x1 = photon.x;
-			float v1y1 = Ymin - e;
-			float v1x2 = photon.x;
-			float v1y2 = photon.y;
-			
-			// for each side
-			for(int s=0; s<3 ;s++){
-
-				float v2x1 = polys[3*s];
-				float v2y1 = polys[3*s + 1];
-				float v2x2 = polys[(3*s + 3) % 9];
-				float v2y2 = polys[(3*s + 4) % 9];			
-			
-				// Check photon path (line) against triangle lines
-				BOOL intersection = areIntersecting(v1x1, v1y1, v1x2, v1y2,
-													v2x1, v2y1, v2x2, v2y2);
-				if(intersection){
-					NSLog(@"Intersection on side: %i", s);
-					NSLog(@"v2x1 : %f v2y1 : %f v2x2 : %f v2y2 : %f", v2x1, v2y1, v2x2, v2y2);
-					return indexCount / i;
-				}
-			}
-		}
-	}	
-	return 0;
+    /* Calculate the intermediate fractional point that the lines potentially
+     *  intersect.
+     */
+    int ua = (n_a << 14)/d;
+    int ub = (n_b << 14)/d;
+    
+    /* The fractional point will be between 0 and 1 inclusive if the lines
+     * intersect.  If the fractional calculation is larger than 1 or smaller
+     * than 0 the lines would need to be longer to intersect.
+     */
+    if(ua >=0 && ua <= (1<<14) && ub >= 0 && ub <= (1<<14))
+    {
+		return [[Vec3f alloc] initWithX:v1x1 + ((int)(ua * (v1x2 - v1x1))>>14)
+									  y:v1y1 + ((int)(ua * (v1y2 - v1y1))>>14)
+									  z:0.0];
+    }
+    return nil;
 }
 
 
@@ -143,6 +113,7 @@ int isPhotonInPolysWithCount(Photon *photon, GLfloat *polys, int indexCount)
 - (void) destroyFramebuffer;
 - (void) beginGLDraw;
 - (void) finishGLDraw;
+- (void) calculatePathStartingWithPhoton:(Photon *)photon;
 
 @end
 
@@ -202,26 +173,42 @@ int isPhotonInPolysWithCount(Photon *photon, GLfloat *polys, int indexCount)
 
 - (void)setupScene
 {	
-	lightPoints = [[NSMutableArray alloc] initWithCapacity:2];
-	[lightPoints addObject:[[[Vec3f alloc] initWithX:-83.0 y:180.0 z:0.0] autorelease]];
-	[lightPoints addObject:[[[Vec3f alloc] initWithX:50.0 y:-20.0 z:0.0] autorelease]];
-	[lightPoints addObject:[[[Vec3f alloc] initWithX:10.0 y:-80.0 z:0.0] autorelease]];
-	
 	obstructions = [[NSMutableArray alloc] initWithCapacity:1];
 	[obstructions addObject:[[Triangle alloc] initWithAx:0.0 aY:-60.0 aZ:0.0 bx:-10.0 bY:-80.0 bZ:0.0 cx:10.0 cY:-80.0 cZ:0.0]];	
 	
-	[self checkForObstructions];
+	Photon *p = [[Photon alloc] initWithX:-83.0 y:-180.0 z:0.0];
+	p.angle = 35.0;
+	
+	[self calculatePathStartingWithPhoton:p];
+	[p release];
 }
 
-- (void)checkForObstructions
-{
-	for(Triangle *triangle in obstructions){
-		// Only check through the second to last point, since the last 
-		// point cant connect with another point to form a line 
-		for(int i=0;i<[lightPoints count]-1; i++){
+- (void)calculatePathStartingWithPhoton:(Photon *)photon
+{	
+	[lightPoints release];
+	lightPoints = [[NSMutableArray alloc] initWithCapacity:1];
+	Photon *p1 = photon;
+	float maxDistance = 500.0;  // A large number so it's always off screen		
+	
+	while(p1){
+		[lightPoints addObject:p1];
+		// create a line
+		// Vec3f *v1 = [[Vec3f alloc] initWithX:photon.x y:photon.y z:photon.z];
+		float x2 = p1.x + (maxDistance * cos(DEGREES_TO_RADIANS(p1.angle)));
+		float y2 = p1.y + (maxDistance * sin(DEGREES_TO_RADIANS(p1.angle)));
+		Photon *p2 = [[Vec3f alloc] initWithX:x2 y:y2 z:p1.z];
+		
+		// check if the line goes through every triangle
+		// if it does, compare which one is closest
+		// add that new point to the array
+		// reset the photon to the new point or nil
+		
+		NSMutableArray *intersections = [[NSMutableArray alloc] init];
+		
+		for(Triangle *triangle in obstructions){
 			// Here's our line
-			Vec3f *v1 = [lightPoints objectAtIndex:i];
-			Vec3f *v2 = [lightPoints objectAtIndex:i+1];
+			// Vec3f *v1 = [lightPoints objectAtIndex:i];
+			// Vec3f *v2 = [lightPoints objectAtIndex:i+1];
 			// Iterate over every line to see if there is an intersection.
 			// If it overlaps ANY line, we can break.
 			NSArray *points = [triangle points];
@@ -230,16 +217,48 @@ int isPhotonInPolysWithCount(Photon *photon, GLfloat *polys, int indexCount)
 				// Since we are assuming it's a polygon, we can circle back around and connect the first and the last point
 				Vec3f *v3 = [points objectAtIndex:l%pointCount];
 				Vec3f *v4 = [points objectAtIndex:(l+1)%pointCount];
-				Vec3f *intersectPoint = areIntersecting(v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, v4.x, v4.y);
+				Vec3f *intersectPoint = areIntersecting(p1.x, p1.y, p2.x, p2.y, v3.x, v3.y, v4.x, v4.y);
 				if(intersectPoint){
-					//NSLog(@"There is an intersection between line %i and side %i", i, l);
-					//NSLog(@"x1: %f y1: %f x2: %f y2: %f x3: %f y3: %f x4: %f y4: %f", 
-						  //v1.x, v1.y, v2.x, v2.y, v3.x, v3.y, v4.x, v4.y);
-					NSLog(@"Intersection AT %f %f", intersectPoint.x, intersectPoint.y);
-					break;
+					// TODO:
+					// We'll just add the intersect point for now, but we'll have to associate it
+					// with the triangle (and side?) in the future so we know how to influence 
+					// the line
+					[intersections addObject:intersectPoint];
+					// DONT break, so we can check all sides (and thus find the closest)
+					// break; 
 				}
 			}
 		}
+		if([intersections count] > 0){
+			// figure out the closest intersection and add that point
+			float pointDistance = maxDistance;
+			Vec3f *closestIntersection = nil;
+			for(Vec3f *i in intersections){
+				float xDist = (i.x - p1.x);
+				float yDist = (i.y - p1.y);
+				float dist = sqrtf((xDist*xDist) + (yDist*yDist));
+				if(dist < pointDistance){
+					// This intersection is closer than the other intersections tested
+					closestIntersection = i;
+					pointDistance = dist;
+				}
+			}			
+			// TODO: This needs a real angle
+			float newAngle = p1.angle - 90;
+			p1 = [[Photon alloc] initWithX:closestIntersection.x y:closestIntersection.y z:closestIntersection.z];
+			p1.angle = newAngle;
+			[p1 autorelease];
+			// TMP!
+			if([lightPoints count] > 5){
+				[lightPoints addObject:p1];
+				p1 = nil;
+			}
+		}else{
+			// Add the last point and bail.
+			[lightPoints addObject:p2];
+			p1 = nil;
+		}
+		[intersections release];
 	}
 }
 
@@ -256,6 +275,14 @@ int isPhotonInPolysWithCount(Photon *photon, GLfloat *polys, int indexCount)
 
 - (void) drawView:(id)sender
 {
+	
+	// Slowly rotating the ray
+	Photon *p = [lightPoints objectAtIndex:0];
+	p.angle += 0.1;	
+	[p retain];
+	[self calculatePathStartingWithPhoton:p];	
+	[p release];
+
 	[self beginGLDraw];
 	
 /*
