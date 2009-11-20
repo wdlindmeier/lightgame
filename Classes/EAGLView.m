@@ -13,7 +13,8 @@
 
 #define USE_DEPTH_BUFFER 0
 #define DEGREES_TO_RADIANS(__ANGLE) ((__ANGLE) / 180.0 * M_PI)
-#define ANGLE_TO_DEGREES(__ANGLE) ((__ANGLE) * 2 * M_PI / 360.0) // Same thing?
+#define RADIANS_TO_DEGREES(__ANGLE) ((__ANGLE) * 180.0 / M_PI)
+// #define ANGLE_TO_DEGREES(__ANGLE) ((__ANGLE) * 2 * M_PI / 360.0) // Same thing?
 
 #pragma mark Collision detection
 
@@ -91,9 +92,9 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
      */
     if(ua >=0 && ua <= (1<<14) && ub >= 0 && ub <= (1<<14))
     {
-		return [[Vec3f alloc] initWithX:v1x1 + ((int)(ua * (v1x2 - v1x1))>>14)
-									  y:v1y1 + ((int)(ua * (v1y2 - v1y1))>>14)
-									  z:0.0];
+		return [[[Vec3f alloc] initWithX:v1x1 + ((int)(ua * (v1x2 - v1x1))>>14)
+									   y:v1y1 + ((int)(ua * (v1y2 - v1y1))>>14)
+									   z:0.0] autorelease];
     }
     return nil;
 }
@@ -173,11 +174,29 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 
 - (void)setupScene
 {	
-	obstructions = [[NSMutableArray alloc] initWithCapacity:1];
-	[obstructions addObject:[[Triangle alloc] initWithAx:0.0 aY:-60.0 aZ:0.0 bx:-10.0 bY:-80.0 bZ:0.0 cx:10.0 cY:-80.0 cZ:0.0]];	
+	int numObstructions = 54; //arc4random() % 20;
+	obstructions = [[NSMutableArray alloc] initWithCapacity:numObstructions];
+
+	for(int i=0;i<numObstructions;i++){
+		int initX = (arc4random() % 320) - 160;
+		int initY = (arc4random() % 480) - 240;
+		Triangle *t = [[Triangle alloc] initWithAx:initX
+												aY:initY
+												aZ:0.0 
+												bx:initX-10.0 
+												bY:initY-20.0 
+												bZ:0.0 
+												cx:initX+10.0 
+												cY:initY-20.0 
+												cZ:0.0];
+		[obstructions addObject:t];	
+		[t release];
+	}
 	
-	Photon *p = [[Photon alloc] initWithX:-83.0 y:-180.0 z:0.0];
-	p.angle = 35.0;
+	Photon *p = [[Photon alloc] initWithX:0.0
+										y:0.0
+										z:0.0];
+	p.angle = (arc4random() % 360);
 	
 	[self calculatePathStartingWithPhoton:p];
 	[p release];
@@ -190,7 +209,7 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 	Photon *p1 = photon;
 	float maxDistance = 500.0;  // A large number so it's always off screen		
 	
-	while(p1){
+	while(p1 != nil){
 		[lightPoints addObject:p1];
 		// create a line
 		// Vec3f *v1 = [[Vec3f alloc] initWithX:photon.x y:photon.y z:photon.z];
@@ -223,7 +242,43 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 					// We'll just add the intersect point for now, but we'll have to associate it
 					// with the triangle (and side?) in the future so we know how to influence 
 					// the line
-					[intersections addObject:intersectPoint];
+					
+					// We dont actually want to return a point that's intersecting, otherwise we get trapped in a feedback
+					// loop
+					float px = intersectPoint.x;
+					//px += px > p1.x ? -1.1 : 1.1;
+					float py = intersectPoint.y;
+					//py += py > p1.y ? -1.1 : 1.1;
+					
+					
+					// This is a little retarded 
+					/*float smallX = v4.x > v3.x ? v3.x : v4.x;
+					float bigX = v4.x > v3.x ? v4.x : v3.x;
+					float smallY = v4.y > v3.y ? v3.y : v4.y;
+					float bigY = v4.y > v3.y ? v4.y : v3.y;*/
+										
+					float sideAngle = RADIANS_TO_DEGREES(atan2f(v4.y-v3.y, v4.x-v3.x));
+					//float sideAngle = atan2f(bigY-smallY, bigX-smallX);
+					//NSLog(@"side angle: %f", sideAngle);
+										
+					float angleDelta = sideAngle - p1.angle;
+					float newAngle = sideAngle + angleDelta;
+					
+					// nudge it in the opposit direction it came from
+					float nudgeX = 5.0 * cos(DEGREES_TO_RADIANS(p1.angle));
+					px += (nudgeX * -1);
+					float nudgeY = 5.0 * sin(DEGREES_TO_RADIANS(p1.angle));															
+					py += (nudgeY * -1);
+					
+					Photon *p = [[Photon alloc] initWithX:px y:py z:p1.z];
+					[p autorelease];									
+					
+					// TODO: How do we pick the normal thats on the outside of the triangle? 
+					// float sideNormal = sideAngle + 90; 					
+					// float angleDelta = (sideNormal + p1.angle) * 2;					
+					// p.angle = p1.angle + angleDelta;// figure out the angle
+					p.angle = newAngle;
+					[intersections addObject:p];
 					// DONT break, so we can check all sides (and thus find the closest)
 					// break; 
 				}
@@ -232,8 +287,8 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 		if([intersections count] > 0){
 			// figure out the closest intersection and add that point
 			float pointDistance = maxDistance;
-			Vec3f *closestIntersection = nil;
-			for(Vec3f *i in intersections){
+			Photon *closestIntersection = nil;
+			for(Photon *i in intersections){
 				float xDist = (i.x - p1.x);
 				float yDist = (i.y - p1.y);
 				float dist = sqrtf((xDist*xDist) + (yDist*yDist));
@@ -244,20 +299,22 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 				}
 			}			
 			// TODO: This needs a real angle
-			float newAngle = p1.angle - 90;
+			//float newAngle = p1.angle - 90;
 			p1 = [[Photon alloc] initWithX:closestIntersection.x y:closestIntersection.y z:closestIntersection.z];
-			p1.angle = newAngle;
+			p1.angle = closestIntersection.angle;
+			//NSLog(@"angle of reflection: %f", p1.angle);
 			[p1 autorelease];
-			// TMP!
-			if([lightPoints count] > 5){
-				[lightPoints addObject:p1];
-				p1 = nil;
-			}
 		}else{
 			// Add the last point and bail.
 			[lightPoints addObject:p2];
 			p1 = nil;
 		}
+		
+		// If there is too much reflection, just bail out
+		if([lightPoints count] > 100){
+			p1 = nil;
+		}
+
 		[intersections release];
 	}
 }
@@ -278,7 +335,7 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 	
 	// Slowly rotating the ray
 	Photon *p = [lightPoints objectAtIndex:0];
-	p.angle += 0.1;	
+	p.angle += 0.5;	
 	[p retain];
 	[self calculatePathStartingWithPhoton:p];	
 	[p release];
@@ -346,19 +403,33 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 	// NOTE: Should the color of the lines be stripped out alltogether? 
 	pointIndex = 0;
 	int numObstructions = [obstructions count];
-	GLfloat obstructionPoints[3 * 3 * numObstructions];
+	int pointsPerObstruction = 6;
+	GLfloat obstructionPoints[(3 * pointsPerObstruction) * numObstructions];
 	for(Triangle *triangle in obstructions){
 		obstructionPoints[pointIndex++] = triangle.a.x;
 		obstructionPoints[pointIndex++] = triangle.a.y;
 		obstructionPoints[pointIndex++] = triangle.a.z;
-
+		
+		obstructionPoints[pointIndex++] = triangle.a.x;
+		obstructionPoints[pointIndex++] = triangle.a.y;
+		obstructionPoints[pointIndex++] = triangle.a.z;
+		
 		obstructionPoints[pointIndex++] = triangle.b.x;
 		obstructionPoints[pointIndex++] = triangle.b.y;
 		obstructionPoints[pointIndex++] = triangle.b.z;
-		
+
 		obstructionPoints[pointIndex++] = triangle.c.x;
 		obstructionPoints[pointIndex++] = triangle.c.y;
-		obstructionPoints[pointIndex++] = triangle.c.z;		
+		obstructionPoints[pointIndex++] = triangle.c.z;
+
+		obstructionPoints[pointIndex++] = triangle.a.x;
+		obstructionPoints[pointIndex++] = triangle.a.y;
+		obstructionPoints[pointIndex++] = triangle.a.z;		
+
+		obstructionPoints[pointIndex++] = triangle.a.x;
+		obstructionPoints[pointIndex++] = triangle.a.y;
+		obstructionPoints[pointIndex++] = triangle.a.z;		
+				
 	}
 	
 /*	GLfloat obstructionPoints[] = {
@@ -367,13 +438,6 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 		10.0, -80.0, 0.0,//   0.0, 1.0, 0.0, 1.0,
 	};*/
 	
-	/*
-	GLfloat obstructionsColors[] = {
-		0.0, 1.0, 0.0, 1.0,
-		0.0, 1.0, 0.0, 1.0,
-		0.0, 1.0, 0.0, 1.0,
-	};
-	 */
 	// Draw the box
 /*	glPushMatrix();
 	{
@@ -408,6 +472,23 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 
 	glEnableClientState(GL_VERTEX_ARRAY);
 	
+	// Draw the obstructions	
+	
+	glPushMatrix();
+	{		
+		// In green!
+		glColor4f( 0.0, 1.0, 0.0, 1.0 );
+		// glEnableClientState(GL_COLOR_ARRAY);
+		glEnable(GL_LINE_SMOOTH);
+		glVertexPointer(3, GL_FLOAT, 0, obstructionPoints);
+		//glColorPointer(4, GL_FLOAT, 28, &obstructionPoints[3]);
+		glDrawArrays(GL_TRIANGLE_STRIP, 0, numObstructions * pointsPerObstruction);
+		//glDisableClientState(GL_COLOR_ARRAY);
+	}
+	glPopMatrix();
+
+	// Draw the light
+	
 	glPushMatrix();	
 	{				
 		glColor4f( 1.0, 0.0, 0.0, 1.0 );
@@ -424,22 +505,6 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 		
 	}
 	glPopMatrix();
-
-
-	// Draw the obstructions	
-	
-	glPushMatrix();
-	{		
-		// In green!
-		glColor4f( 0.0, 1.0, 0.0, 1.0 );
-		//glEnableClientState(GL_COLOR_ARRAY);
-		glEnable(GL_LINE_SMOOTH);
-		glVertexPointer(3, GL_FLOAT, 0, obstructionPoints);
-		//glColorPointer(4, GL_FLOAT, 0, obstructionsColors);
-		glDrawArrays(GL_LINE_LOOP, 0, numObstructions * 3);
-	}
-	glPopMatrix();
-		
 	
 
 	[self finishGLDraw];
