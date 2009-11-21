@@ -14,12 +14,16 @@
 	Vec3f *a;
 	Vec3f *b;
 	Vec3f *c;
+	BOOL intersected;
+	float lastIntersection;
 
 }
 
 @property (nonatomic, retain) Vec3f *a;
 @property (nonatomic, retain) Vec3f *b;
 @property (nonatomic, retain) Vec3f *c;
+@property (assign) BOOL intersected;
+@property (assign) float lastIntersection;
 
 - (NSArray *)points;
 

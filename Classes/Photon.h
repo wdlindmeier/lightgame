@@ -8,10 +8,14 @@
 
 #import "Vec3f.h"
 
+@class Triangle;
+
 @interface Photon : Vec3f {
 	float angle;
+	Triangle *triangle;
 }
 
 @property (assign) float angle;
+@property (nonatomic, retain) Triangle *triangle;
 
 @end

@@ -7,15 +7,17 @@
 //
 
 #import "Photon.h"
+#import "Triangle.h"
 
 @implementation Photon
 
-@synthesize angle;
+@synthesize angle, triangle;
 
 #pragma mark Memory 
 
 - (void)dealloc
 {
+	self.triangle = nil;
 	[super dealloc];
 }
 

@@ -11,7 +11,7 @@
 
 @implementation Triangle
 
-@synthesize a,b,c;
+@synthesize a, b, c, intersected, lastIntersection;
 
 - (id)initWithAx:(float)aX aY:(float)aY aZ:(float)aZ 
 			  bx:(float)bX bY:(float)bY bZ:(float)bZ 
@@ -35,6 +35,16 @@
 		self.c = cVec;
 	}
 	return self;
+}
+
+- (void)setIntersected:(BOOL)isIntersected
+{
+	intersected = isIntersected;
+	if(intersected){
+		lastIntersection = 1.0;
+	}else if(lastIntersection > 0){
+		lastIntersection -= 0.01;
+	}
 }
 
 - (NSArray *)points
