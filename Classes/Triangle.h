@@ -16,20 +16,28 @@
 	Vec3f *c;
 	BOOL intersected;
 	float lastIntersection;
+	float size;
+	CGPoint origin;
+	float rotation;
 
 }
 
-@property (nonatomic, retain) Vec3f *a;
-@property (nonatomic, retain) Vec3f *b;
-@property (nonatomic, retain) Vec3f *c;
+@property (nonatomic, readonly) Vec3f *a;
+@property (nonatomic, readonly) Vec3f *b;
+@property (nonatomic, readonly) Vec3f *c;
+@property (assign) float size;
 @property (assign) BOOL intersected;
 @property (assign) float lastIntersection;
+@property (assign) float rotation;
+@property (assign) CGPoint origin;
 
 - (NSArray *)points;
 
-- (id)initWithA:(Vec3f *)aVec b:(Vec3f *)bVec c:(Vec3f *)cVec;
+- (id)initWithOrigin:(CGPoint)anOrigin size:(float)aSize rotation:(float)aRotation;
+
+/*- (id)initWithA:(Vec3f *)aVec b:(Vec3f *)bVec c:(Vec3f *)cVec;
 - (id)initWithAx:(float)aX aY:(float)aY aZ:(float)aZ 
 			  bx:(float)bX bY:(float)bY bZ:(float)bZ 
 			  cx:(float)cX cY:(float)cY cZ:(float)cZ;
-
+*/
 @end

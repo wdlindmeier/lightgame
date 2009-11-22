@@ -7,12 +7,13 @@
 //
 
 #import "Triangle.h"
+#import "GlobalFunctions.h"
 #import "Vec3f.h"
 
 @implementation Triangle
 
-@synthesize a, b, c, intersected, lastIntersection;
-
+@synthesize a, b, c, intersected, lastIntersection, size, origin, rotation;
+/*
 - (id)initWithAx:(float)aX aY:(float)aY aZ:(float)aZ 
 			  bx:(float)bX bY:(float)bY bZ:(float)bZ 
 			  cx:(float)cX cY:(float)cY cZ:(float)cZ
@@ -35,6 +36,45 @@
 		self.c = cVec;
 	}
 	return self;
+}*/
+
+- (id)initWithOrigin:(CGPoint)anOrigin size:(float)aSize rotation:(float)aRotation
+{
+	if(self = [super init]){
+		self.origin = anOrigin;
+		self.size = aSize;
+		float halfSize = aSize * 0.5;
+		a = [[Vec3f alloc] initWithX:anOrigin.x + halfSize y:anOrigin.y + halfSize z:0.0];
+		b = [[Vec3f alloc] initWithX:anOrigin.x - halfSize y:anOrigin.y - halfSize z:0.0];
+		c = [[Vec3f alloc] initWithX:anOrigin.x + halfSize y:anOrigin.y - halfSize z:0.0];
+		self.rotation = aRotation;
+	}
+	return self;
+}
+
+- (void)setRotation:(float)aRotation
+{
+	if(rotation != aRotation){
+		rotation = aRotation;
+		
+		float aX = self.a.x - self.origin.x;
+		float aY = self.a.y - self.origin.y;
+		float bX = self.b.x - self.origin.x;
+		float bY = self.b.y - self.origin.y;
+		float cX = self.c.x - self.origin.x;
+		float cY = self.c.y - self.origin.y;
+		
+		CGPoint axy = rotateXYDegrees(aX, aY, rotation);
+		CGPoint bxy = rotateXYDegrees(bX, bY, rotation);
+		CGPoint cxy = rotateXYDegrees(cX, cY, rotation);
+
+		self.a.x = self.origin.x + axy.x;
+		self.a.y = self.origin.x + axy.y;
+		self.b.x = self.origin.x + bxy.x;
+		self.b.y = self.origin.x + bxy.y;
+		self.c.x = self.origin.x + cxy.x;
+		self.c.y = self.origin.x + cxy.y;
+	}
 }
 
 - (void)setIntersected:(BOOL)isIntersected
@@ -49,14 +89,14 @@
 
 - (NSArray *)points
 {
-	return [NSArray arrayWithObjects:self.a, self.b, self.c, nil];
+	return [NSArray arrayWithObjects:a, b, c, nil];
 }
 
 - (void)dealloc
 {
-	self.a = nil;
-	self.b = nil;
-	self.c = nil;
+	[a release];
+	[b release];
+	[c release];
 	[super dealloc];
 }
 

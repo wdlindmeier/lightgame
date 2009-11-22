@@ -12,9 +12,6 @@
 #import "Triangle.h"
 
 #define USE_DEPTH_BUFFER 0
-#define DEGREES_TO_RADIANS(__ANGLE) ((__ANGLE) / 180.0 * M_PI)
-#define RADIANS_TO_DEGREES(__ANGLE) ((__ANGLE) * 180.0 / M_PI)
-// #define ANGLE_TO_DEGREES(__ANGLE) ((__ANGLE) * 2 * M_PI / 360.0) // Same thing?
 
 #pragma mark Collision detection
 
@@ -119,10 +116,6 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 @property (nonatomic, retain) EAGLContext *context;
 @property (nonatomic, assign) NSTimer *animationTimer;
 
-//- (void)perspectiveFov:(float)fov aspect:(float)aspect zNear:(float)zNear zFar:(float)zFar;
-//- (void)gluLookAtEye:(Vec3f*)eye center:(Vec3f*)center up:(Vec3f*)up;
-//- (Vec3f*)crossProduct:(Vec3f*)v1 with:(Vec3f*)v2;
-//- (int)isPhotonInPolys:(GLfloat *)polys count:(int)indexCount;
 - (BOOL) createFramebuffer;
 - (void) destroyFramebuffer;
 - (void) beginGLDraw;
@@ -162,7 +155,9 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 		if (!context || ![EAGLContext setCurrentContext:context]) {
             [self release];
             return nil;
-        }		
+        }
+		
+		self.multipleTouchEnabled = YES;
 		
 		animating = FALSE;
 		displayLinkSupported = FALSE;
@@ -187,25 +182,27 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 
 - (void)setupScene
 {	
-	int numObstructions = 30; //arc4random() % 50;
-	obstructions = [[NSMutableArray alloc] initWithCapacity:numObstructions];
-
+	//float obstructionSize = 20.0;
+//	int numObstructions = 60; //arc4random() % 50;
+//	obstructions = [[NSMutableArray alloc] initWithCapacity:numObstructions];
+	obstructions = [[NSMutableArray alloc] init];
+/*
 	for(int i=0;i<numObstructions;i++){
 		int initX = (arc4random() % 320) - 160;
 		int initY = (arc4random() % 480) - 240;
 		Triangle *t = [[Triangle alloc] initWithAx:initX
 												aY:initY
 												aZ:0.0 
-												bx:initX-20.0 
-												bY:initY-40.0 
+												bx:initX-(obstructionSize*0.5)
+												bY:initY-obstructionSize
 												bZ:0.0 
-												cx:initX+20.0 
-												cY:initY-40.0 
+												cx:initX+(obstructionSize*0.5)
+												cY:initY-obstructionSize
 												cZ:0.0];
 		[obstructions addObject:t];	
 		[t release];
 	}
-	
+*/	
 	Photon *p = [[Photon alloc] initWithX:0.0
 										y:0.0
 										z:0.0];
@@ -224,8 +221,7 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 	
 	while(p1 != nil){
 		[lightPoints addObject:p1];
-		// create a line
-		// Vec3f *v1 = [[Vec3f alloc] initWithX:photon.x y:photon.y z:photon.z];
+
 		float x2 = p1.x + (maxDistance * cos(DEGREES_TO_RADIANS(p1.angle)));
 		float y2 = p1.y + (maxDistance * sin(DEGREES_TO_RADIANS(p1.angle)));
 		Photon *p2 = [[Vec3f alloc] initWithX:x2 y:y2 z:p1.z];
@@ -238,43 +234,20 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 		NSMutableArray *intersections = [[NSMutableArray alloc] init];
 		
 		for(Triangle *triangle in obstructions){			
-			// Crawl towards the center:
-			
-			// Here's our line
-			// Vec3f *v1 = [lightPoints objectAtIndex:i];
-			// Vec3f *v2 = [lightPoints objectAtIndex:i+1];
-			// Iterate over every line to see if there is an intersection.
-			// If it overlaps ANY line, we can break.
 			NSArray *points = [triangle points];
 			int pointCount = [points count];
+
 			for(int l=0;l<pointCount;l++){
 				// Since we are assuming it's a polygon, we can circle back around and connect the first and the last point
 				Vec3f *v3 = [points objectAtIndex:l%pointCount];
 				Vec3f *v4 = [points objectAtIndex:(l+1)%pointCount];
 				Vec3f *intersectPoint = areIntersecting(p1.x, p1.y, p2.x, p2.y, v3.x, v3.y, v4.x, v4.y);
 				if(intersectPoint){
-					// TODO:
-					// We'll just add the intersect point for now, but we'll have to associate it
-					// with the triangle (and side?) in the future so we know how to influence 
-					// the line
-					
-					// We dont actually want to return a point that's intersecting, otherwise we get trapped in a feedback
-					// loop
+
 					float px = intersectPoint.x;
-					//px += px > p1.x ? -1.1 : 1.1;
 					float py = intersectPoint.y;
-					//py += py > p1.y ? -1.1 : 1.1;
 					
-					
-					// This is a little retarded 
-					/*float smallX = v4.x > v3.x ? v3.x : v4.x;
-					float bigX = v4.x > v3.x ? v4.x : v3.x;
-					float smallY = v4.y > v3.y ? v3.y : v4.y;
-					float bigY = v4.y > v3.y ? v4.y : v3.y;*/
-										
 					float sideAngle = RADIANS_TO_DEGREES(atan2f(v4.y-v3.y, v4.x-v3.x));
-					//float sideAngle = atan2f(bigY-smallY, bigX-smallX);
-					//NSLog(@"side angle: %f", sideAngle);
 										
 					float angleDelta = sideAngle - p1.angle;
 					float newAngle = sideAngle + angleDelta;
@@ -287,28 +260,18 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 					float nudgeY = 2.0 * sin(sideNormal);															
 					px += nudgeX;
 					py += nudgeY;
-					
-					// nudge it in the opposit direction it came from
-					//float nudgeX = 3.0 * cos(DEGREES_TO_RADIANS(p1.angle));
-					//float nudgeY = 3.0 * sin(DEGREES_TO_RADIANS(p1.angle));															
-					//px += (nudgeX * -1);
-					//py += (nudgeY * -1);
 					 
 					Photon *p = [[Photon alloc] initWithX:px y:py z:p1.z];
-					[p autorelease];									
-					
-					// TODO: How do we pick the normal thats on the outside of the triangle? 
-					// float sideNormal = sideAngle + 90; 					
-					// float angleDelta = (sideNormal + p1.angle) * 2;					
-					// p.angle = p1.angle + angleDelta;// figure out the angle
 					p.angle = newAngle;
 					p.triangle = triangle;
 					[intersections addObject:p];
+					[p release];
 					// DONT break, so we can check all sides (and thus find the closest)
 					// break; 
 				}
 			}
 		}
+
 		if([intersections count] > 0){
 			// figure out the closest intersection and add that point
 			float pointDistance = maxDistance;
@@ -323,25 +286,13 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 					pointDistance = dist;
 				}
 			}	
-			
-			// TEST: Nudge the triangle a little
-			float nudgeX = 0.1 * cos(DEGREES_TO_RADIANS(p1.angle)); // the old p1
-			float nudgeY = 0.1 * sin(DEGREES_TO_RADIANS(p1.angle));	// ''														
-			
-			// TODO: This needs a real angle
-			//float newAngle = p1.angle - 90;
+						
 			Triangle *iTriangle = closestIntersection.triangle;
 			iTriangle.intersected = YES;
 			p1 = [[Photon alloc] initWithX:closestIntersection.x y:closestIntersection.y z:closestIntersection.z];
 			p1.angle = closestIntersection.angle;
-			//NSLog(@"angle of reflection: %f", p1.angle);
 			[p1 autorelease];
-			
-			for(Vec3f *point in iTriangle.points){
-				point.x += (nudgeX * 1);
-				point.y += (nudgeY * 1);
-			}
-			
+
 		}else{
 			// Add the last point and bail.
 			[lightPoints addObject:p2];
@@ -373,57 +324,18 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 	
 	// Slowly rotating the ray
 	Photon *p = [lightPoints objectAtIndex:0];
-	p.angle += 0.5;	
+	// p.angle += 0.5;	
 	[p retain];
 	[self calculatePathStartingWithPhoton:p];	
 	[p release];
 
 	[self beginGLDraw];
-	
-/*
-	int numParticles = 1; // [particles count];
-
-	GLfloat particles[3 * numParticles * 4]; // 4 for the particle color
-	
-	int particleIndex = 0;
-	photon.x += 1;
-	photon.y += 1;
-	
-	for(int i=0; i<numParticles; i++){
-		// The particle's position in space
-		particles[ particleIndex++ ] = photon.x;
-		particles[ particleIndex++ ] = photon.y;
-		particles[ particleIndex++ ] = photon.z;
-		// The particle's color
-		particles[ particleIndex++ ] = 1.0; // r
-		particles[ particleIndex++ ] = 0.0; // g
-		particles[ particleIndex++ ] = 0.0; // b
-		particles[ particleIndex++ ] = 1.0; // a
-	}
-	*/
-/*	GLfloat box[] = {
-		-160.0, 240.0,	0.0, // top left
-		-160.0, -240.0, 0.0, // bottom left
-		160.0, -240.0,	0.0, // bottom right
-		160.0, 240.0,	0.0 // top right
-	};
-	
-	GLfloat boxColors[] = {
-		0.0, 1.0, 0.0, 1.0, // top left
-		0.0, 1.0, 1.0, 1.0, // bottom left
-		0.0, 1.0, 0.0, 1.0, // bottom right
-		0.0, 1.0, 1.0, 1.0, // top right
-	};*/
-	
-	//int numPoints = sizeof(lightPoints) / sizeof(CGPoint);
+		
 	int numPoints = [lightPoints count];
 	GLfloat points[(3 * numPoints) + (4 * numPoints)];
-	//GLfloat points[] = {-12.0, 10.0, 0};
 
 	int pointIndex = 0;
 	for(Vec3f *v in lightPoints){
-	//for(int i=0; i<numPoints; i++){
-		// The point's position in space
 		points[ pointIndex++ ] = v.x;
 		points[ pointIndex++ ] = v.y;
 		points[ pointIndex++ ] = v.z;	 
@@ -434,11 +346,6 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 		points[ pointIndex++ ] = 1.0;
 	}		
 	
-	//GLfloat lineColor[] = {1.0, 1.0, 0.0, 1.0}; // Yellow lines 
-
-	 // 1 Obstruction: Just a simple triangle
-	// All lines are in red. 
-	// NOTE: Should the color of the lines be stripped out alltogether? 
 	pointIndex = 0;
 	int numObstructions = [obstructions count];
 	int pointsPerObstruction = 6;
@@ -502,55 +409,14 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 		obstructionPoints[pointIndex++] = 1.0;
 		
 		triangle.intersected = NO;
-		
 	}
 	
-/*	GLfloat obstructionPoints[] = {
-		0.0, -60.0, 0.0,//   0.0, 1.0, 0.0, 1.0,
-		-10.0, -80.0, 0.0,//  0.0, 1.0, 0.0, 1.0,
-		10.0, -80.0, 0.0,//   0.0, 1.0, 0.0, 1.0,
-	};*/
-	
-	// Draw the box
-/*	glPushMatrix();
-	{
-		//glTranslatef(2.0, 0.0, -4.0);		
-		glVertexPointer(3, GL_FLOAT, 0, box);
-		glColorPointer(4, GL_FLOAT, 0, boxColors);
-		glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
-	}
-	glPopMatrix();*/
-	
-/*	int intersect = isPhotonInPolysWithCount(photon, obstructions, 9);
-	if(intersect){ //;// using an int is faster than calculating it
-		NSLog(@"possible intersection with triangle: %i", intersect);
-	}
-*/
-/*	
-	// Draw the particles
-	glPushMatrix();	
-	{		
-		//glTranslatef(-2.0, 0.0, -4.0);
-		glPointSize(8.0);		
-		glEnable(GL_POINT_SMOOTH);
-		glVertexPointer(3, GL_FLOAT, 28, particles);
-		glColorPointer(4, GL_FLOAT, 28, &particles[3]);
-		glEnableClientState(GL_COLOR_ARRAY);
-		glEnableClientState(GL_VERTEX_ARRAY);		
-		glDrawArrays(GL_POINTS, 0, numParticles);		
-	}
-	glPopMatrix();
-*/
-	// Draw the points
-
 	glEnableClientState(GL_VERTEX_ARRAY);
 	
 	// Draw the obstructions	
 	
 	glPushMatrix();
 	{		
-		// In green!
-		//glColor4f( 0.0, 1.0, 0.0, 1.0 );
 		glEnableClientState(GL_COLOR_ARRAY);
 		glEnable(GL_LINE_SMOOTH);
 		glVertexPointer(3, GL_FLOAT, 28, obstructionPoints);
@@ -569,7 +435,6 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 		// Draw the lines
 		glColor4f( 1.0, 0.0, 0.0, 1.0 );
 		glEnable(GL_LINE_SMOOTH);
-		//glColorPointer(4, GL_FLOAT, 0, lineColor);
 		glDrawArrays(GL_LINE_STRIP, 0, numPoints);
 		
 		// Draw the points
@@ -578,7 +443,6 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 		glColor4f( 1.0, 1.0, 0.0, 0.5 );
 		glPointSize(8.0);		
 		glEnable(GL_POINT_SMOOTH);		
-		//glColorPointer(4, GL_FLOAT, 28, &points[3]);
 		glDrawArrays(GL_POINTS, 0, numPoints);				
 		glDisable(GL_BLEND);
 		
@@ -737,6 +601,36 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 	glTranslatef(0.0, 0.0, -277.0);		
 	// glMatrixMode(GL_MODELVIEW);
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);		
+}
+
+#pragma mark Touch events
+
+- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
+{
+}
+
+- (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
+{
+}
+
+- (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
+{
+	for(UITouch *touch in touches){
+		// Add a triangle with a double tap
+		if(touch.tapCount == 2){
+			CGPoint touchPoint = [touch locationInView:self];
+			CGPoint trianglePoint = CGPointMake(touchPoint.x - 160.0, -touchPoint.y + 240.0);
+			Triangle *triangle = [[Triangle alloc] initWithOrigin:trianglePoint
+															 size:20.0 
+														 rotation:0.0];
+			[obstructions addObject:triangle];			
+			[triangle release];
+		}
+	}
+}
+
+- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
+{
 }
 
 #pragma mark GL Logistics
