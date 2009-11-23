@@ -5,16 +5,22 @@
 
 \f0\fs20 \cf0 TODO:\
 ==================\
-The angle of reflection is incorrect (at certain rotations)\
-	The nudge works in phase, so certain angles dont work\
-Adding rotation to an existing triangle doesnt work as expected\
-Anchor the light source with random angle\
-Add triangles with the click of a button\
-	Add size to triangle\
-	Use origin, size, rotation rather than a,b,c\
+\
+Audio:\
+	Allow shapes to rotate\
+	each stream of light has a track\
+	whenever a new obstruction is hit it play's the obstructions audio file (or tone)\
+	the pitch of the audio file is determined by the distance of the intersection from the middle of the impact \
+	\
+> Each triangle gets a sound assigned to it\
+> When a triangle is marked as hit, it's audio plays\
+> when a triangle is maked as unhit, it's audio stops\
+> figure the pitch in somehow\
+\
 Triangles can't overlap\
 Triangles can be dragged\
 Subclass Triangle from Obstruction and add squares (iterate over Obstruction *s)\
+	Change Photon.triangle to Photon.obstruction\
 Black holes act as obstructions but dont spit out another photon\
 \
 GAMEPLAY:\
@@ -26,6 +32,13 @@ You have to light up N goalposts before you get to the final one\
 \
 COMPLETED:\
 ==================\
+The angle of reflection is incorrect (at certain rotations)\
+	The nudge works in phase, so certain angles dont work\
+Adding rotation to an existing triangle doesnt work as expected\
+Anchor the light source with random angle\
+Add triangles with the click of a button\
+	Add size to triangle\
+	Use origin, size, rotation rather than a,b,c\
 \pard\pardeftab720\ql\qnatural
 
 \f1\fs24 \cf0 Don't recalculate until the player adds or moves a piece

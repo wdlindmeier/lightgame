@@ -16,6 +16,10 @@
 		28FD15000DC6FC520079059D /* OpenGLES.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD14FF0DC6FC520079059D /* OpenGLES.framework */; };
 		28FD15080DC6FC5B0079059D /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 28FD15070DC6FC5B0079059D /* QuartzCore.framework */; };
 		A925C23910B8CFB900F87D39 /* GlobalFunctions.m in Sources */ = {isa = PBXBuildFile; fileRef = A925C23810B8CFB900F87D39 /* GlobalFunctions.m */; };
+		A925C4D010BA1E7200F87D39 /* Audio in Resources */ = {isa = PBXBuildFile; fileRef = A925C4C710BA1E7200F87D39 /* Audio */; };
+		A925C4D210BA1F3E00F87D39 /* OpenAL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A925C4D110BA1F3E00F87D39 /* OpenAL.framework */; };
+		A925C4FC10BA201900F87D39 /* OALAudioController.m in Sources */ = {isa = PBXBuildFile; fileRef = A925C4FB10BA201900F87D39 /* OALAudioController.m */; };
+		A925C54210BA272100F87D39 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A925C54110BA272100F87D39 /* AudioToolbox.framework */; };
 		A94D817D10B4F63F006F1990 /* TODO.rtf in Resources */ = {isa = PBXBuildFile; fileRef = A94D817C10B4F63F006F1990 /* TODO.rtf */; };
 		A94D827210B50C95006F1990 /* Triangle.m in Sources */ = {isa = PBXBuildFile; fileRef = A94D827110B50C95006F1990 /* Triangle.m */; };
 		A95114FA10B1014D00CBB40B /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A95114F910B1014D00CBB40B /* CoreGraphics.framework */; };
@@ -40,6 +44,11 @@
 		8D1107310486CEB800E47090 /* LightGame-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "LightGame-Info.plist"; plistStructureDefinitionIdentifier = "com.apple.xcode.plist.structure-definition.iphone.info-plist"; sourceTree = "<group>"; };
 		A925C23710B8CFB900F87D39 /* GlobalFunctions.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GlobalFunctions.h; sourceTree = "<group>"; };
 		A925C23810B8CFB900F87D39 /* GlobalFunctions.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GlobalFunctions.m; sourceTree = "<group>"; };
+		A925C4C710BA1E7200F87D39 /* Audio */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Audio; sourceTree = "<group>"; };
+		A925C4D110BA1F3E00F87D39 /* OpenAL.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = OpenAL.framework; path = System/Library/Frameworks/OpenAL.framework; sourceTree = SDKROOT; };
+		A925C4FA10BA201900F87D39 /* OALAudioController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = OALAudioController.h; sourceTree = "<group>"; };
+		A925C4FB10BA201900F87D39 /* OALAudioController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = OALAudioController.m; sourceTree = "<group>"; };
+		A925C54110BA272100F87D39 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		A94D817C10B4F63F006F1990 /* TODO.rtf */ = {isa = PBXFileReference; lastKnownFileType = text.rtf; path = TODO.rtf; sourceTree = "<group>"; };
 		A94D827010B50C95006F1990 /* Triangle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Triangle.h; sourceTree = "<group>"; };
 		A94D827110B50C95006F1990 /* Triangle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Triangle.m; sourceTree = "<group>"; };
@@ -61,6 +70,8 @@
 				28FD15000DC6FC520079059D /* OpenGLES.framework in Frameworks */,
 				28FD15080DC6FC5B0079059D /* QuartzCore.framework in Frameworks */,
 				A95114FA10B1014D00CBB40B /* CoreGraphics.framework in Frameworks */,
+				A925C4D210BA1F3E00F87D39 /* OpenAL.framework in Frameworks */,
+				A925C54210BA272100F87D39 /* AudioToolbox.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -75,6 +86,8 @@
 				28FD14FD0DC6FC130079059D /* EAGLView.m */,
 				1D3623240D0F684500981E51 /* LightGameAppDelegate.h */,
 				1D3623250D0F684500981E51 /* LightGameAppDelegate.m */,
+				A925C4FA10BA201900F87D39 /* OALAudioController.h */,
+				A925C4FB10BA201900F87D39 /* OALAudioController.m */,
 			);
 			path = Classes;
 			sourceTree = "<group>";
@@ -90,6 +103,7 @@
 		29B97314FDCFA39411CA2CEA /* CustomTemplate */ = {
 			isa = PBXGroup;
 			children = (
+				A925C4C710BA1E7200F87D39 /* Audio */,
 				080E96DDFE201D6D7F000001 /* Classes */,
 				29B97315FDCFA39411CA2CEA /* Other Sources */,
 				29B97317FDCFA39411CA2CEA /* Resources */,
@@ -124,6 +138,8 @@
 		29B97323FDCFA39411CA2CEA /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				A925C54110BA272100F87D39 /* AudioToolbox.framework */,
+				A925C4D110BA1F3E00F87D39 /* OpenAL.framework */,
 				A95114F910B1014D00CBB40B /* CoreGraphics.framework */,
 				28FD15070DC6FC5B0079059D /* QuartzCore.framework */,
 				28FD14FF0DC6FC520079059D /* OpenGLES.framework */,
@@ -199,6 +215,7 @@
 				28AD733F0D9D9553002E5188 /* MainWindow.xib in Resources */,
 				A951167310B11DA100CBB40B /* outline.rtf in Resources */,
 				A94D817D10B4F63F006F1990 /* TODO.rtf in Resources */,
+				A925C4D010BA1E7200F87D39 /* Audio in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -216,6 +233,7 @@
 				A951158010B10F8B00CBB40B /* Vec3f.m in Sources */,
 				A94D827210B50C95006F1990 /* Triangle.m in Sources */,
 				A925C23910B8CFB900F87D39 /* GlobalFunctions.m in Sources */,
+				A925C4FC10BA201900F87D39 /* OALAudioController.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

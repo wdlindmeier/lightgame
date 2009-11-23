@@ -10,8 +10,11 @@
 #import "Photon.h"
 #import "Vec3f.h"
 #import "Triangle.h"
+#import "OALAudioController.h"
 
 #define USE_DEPTH_BUFFER 0
+
+const int MAX_REFLECTION = 100;
 
 // A class extension to declare private methods
 @interface EAGLView ()
@@ -76,6 +79,13 @@
 		if ([currSysVer compare:reqSysVer options:NSNumericSearch] != NSOrderedAscending)
 			displayLinkSupported = TRUE;
 		
+		
+		audioController = [[OALAudioController alloc] init];
+		[audioController loadAudioNamed:@"1" loops:NO];
+		[audioController loadAudioNamed:@"2" loops:NO];
+		[audioController loadAudioNamed:@"3" loops:NO];
+		[audioController playAudioNamed:@"1"];
+		
 		[self setupView];
 		[self setupScene];
 				
@@ -120,13 +130,12 @@
 {
 	Photon *p = [lightPoints objectAtIndex:0];
 	[p retain];
-	[self calculatePathStartingWithPhoton:p];	
+	[self calculatePathStartingWithPhoton:p];
 	[p release];
 }
 
 - (void)calculatePathStartingWithPhoton:(Photon *)photon
 {	
-	NSLog(@"calculatePathStartingWithPhoton");
 	[lightPoints release];
 	lightPoints = [[NSMutableArray alloc] initWithCapacity:1];
 	Photon *p1 = photon;
@@ -204,8 +213,8 @@
 			iTriangle.intersected = YES;
 			p1 = [[Photon alloc] initWithX:closestIntersection.x y:closestIntersection.y z:closestIntersection.z];
 			p1.angle = closestIntersection.angle;
+			p1.triangle = iTriangle;
 			[p1 autorelease];
-
 		}else{
 			// Add the last point and bail.
 			[lightPoints addObject:p2];
@@ -213,7 +222,7 @@
 		}
 		
 		// If there is too much reflection, just bail out
-		if([lightPoints count] > 2){ //100){
+		if([lightPoints count] > MAX_REFLECTION){
 			p1 = nil;
 		}
 
@@ -247,6 +256,10 @@
 		t.rotation += 1.0;
 	}
 	[self recalculatePath];
+	
+	if([lightPoints count] < 3){
+		NSLog(@"No obstructions");
+	}
 		
 /*	
 	// Slowly rotating the ray

@@ -14,6 +14,7 @@
 @synthesize window;
 @synthesize glView;
 
+
 - (void) applicationDidFinishLaunching:(UIApplication *)application
 {
 	[glView startAnimation];
@@ -38,6 +39,7 @@
 {
 	[window release];
 	[glView release];
+	
 	
 	[super dealloc];
 }
