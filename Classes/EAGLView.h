@@ -13,8 +13,6 @@
 #import <OpenGLES/ES1/glext.h>
 #import "GlobalFunctions.h"
 
-@class Photon;
-
 @interface EAGLView : UIView
 {    
 @private

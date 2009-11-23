@@ -15,7 +15,6 @@
 	Vec3f *b;
 	Vec3f *c;
 	BOOL intersected;
-	float lastIntersection;
 	float size;
 	CGPoint origin;
 	float rotation;
@@ -27,7 +26,6 @@
 @property (nonatomic, readonly) Vec3f *c;
 @property (assign) float size;
 @property (assign) BOOL intersected;
-@property (assign) float lastIntersection;
 @property (assign) float rotation;
 @property (assign) CGPoint origin;
 
