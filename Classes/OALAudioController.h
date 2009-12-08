@@ -16,15 +16,21 @@
 	ALCcontext* oalContext;
 	ALCdevice* oalDevice;	
 	NSMutableDictionary *soundDictionary;
-	NSMutableArray *bufferStorageArray;
+	//NSMutableArray *bufferStorageArray;	
 
 }
 
 - (void)initOpenAL;
 - (void)cleanUpOpenAL:(id)sender;
-- (void)loadAudioNamed:(NSString *)filename loops:(BOOL)loops;
-- (void)playAudioNamed:(NSString*)soundKey;
-- (void)stopAudioNamed:(NSString*)soundKey;
+//- (void)loadAudioNamed:(NSString *)filename loops:(BOOL)loops;
+//- (NSString *)loadAudioNamed:(NSString *)fileName loops:(BOOL)loops;
+- (NSUInteger)loadAudioNamed:(NSString *)aFile loops:(BOOL)loops;
+//- (void)playAudioNamed:(NSString*)soundKey;
+- (void)playAudioWithId:(NSUInteger)soundId;
+//- (void)stopAudioNamed:(NSString*)soundKey;
+- (void)stopAudioWithId:(NSUInteger)soundId;
+
++ (OALAudioController *)sharedAudioController;
 
 
 @end

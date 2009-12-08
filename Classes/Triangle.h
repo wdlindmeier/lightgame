@@ -15,10 +15,12 @@
 	Vec3f *b;
 	Vec3f *c;
 	BOOL intersected;
+	BOOL singing;
 	float size;
 	CGPoint origin;
 	float rotation;
-
+	NSUInteger soundId;
+	
 }
 
 @property (nonatomic, readonly) Vec3f *a;
@@ -26,6 +28,7 @@
 @property (nonatomic, readonly) Vec3f *c;
 @property (assign) float size;
 @property (assign) BOOL intersected;
+@property (assign) BOOL singing;
 @property (assign) float rotation;
 @property (assign) CGPoint origin;
 

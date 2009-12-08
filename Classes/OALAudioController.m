@@ -8,10 +8,13 @@
 
 #import "OALAudioController.h"
 
+#define kAudioInfoBufferId @"bufferId"
+
 @interface OALAudioController(private)
 
 - (AudioFileID)openAudioFile:(NSString*)filePath;
 - (UInt32)audioFileSize:(AudioFileID)fileDescriptor;
+
 @end
 
 
@@ -25,7 +28,7 @@
 {
 	if(self = [super init]){
 		soundDictionary = [[NSMutableDictionary alloc] init];
-		bufferStorageArray = [[NSMutableArray alloc] init];
+		//bufferStorageArray = [[NSMutableArray alloc] init];
 		[self initOpenAL];
 		// load audios?		
 	}
@@ -45,36 +48,63 @@
 	}	
 }
 
-
 #pragma mark Load audio 
 
-- (void)loadAudioNamed:(NSString *)aFile loops:(BOOL)loops{ // or something
+//- (void)loadAudioNamed:(NSString *)aFile loops:(BOOL)loops{ // or something
+
+// Returns a source ID that allows the player to keep track of the audio
+- (NSUInteger)loadAudioNamed:(NSString *)aFile loops:(BOOL)loops
+{
 	
-	// get the full path of the file
-	NSString* fileName = [[NSBundle mainBundle] pathForResource:aFile ofType:@"caf" inDirectory:@"Audio"];
-	// first, open the file
-	AudioFileID fileID = [self openAudioFile:fileName];
-	UInt32 fileSize = [self audioFileSize:fileID];
-	unsigned char * outData = malloc(fileSize);	
-	
-	// this where we actually get the bytes from the file and put them
-	// into the data buffer
-	OSStatus result = noErr;
-	result = AudioFileReadBytes(fileID, false, 0, &fileSize, outData);
-	AudioFileClose(fileID); //close the file
-	if (result != 0) NSLog(@"cannot load effect: %@",fileName);
-	
+	// If the audio is loaded already, just create a new source
+	NSMutableDictionary *audioInfo = [soundDictionary objectForKey:aFile];
 	NSUInteger bufferID;
-	// grab a buffer ID from openAL
-	alGenBuffers(1, &bufferID);
+
+	// If it already has a player attached, we'll assume the file's been loaded
+	if(!audioInfo){
+		
+		audioInfo = [NSMutableDictionary dictionary];
+		[soundDictionary setObject:audioInfo forKey:aFile];
+		
+		// get the full path of the file
+		NSString* fileName = [[NSBundle mainBundle] pathForResource:aFile ofType:@"caf" inDirectory:@"Audio"];
+		// first, open the file
+		AudioFileID fileID = [self openAudioFile:fileName];
+		UInt32 fileSize = [self audioFileSize:fileID];
+		unsigned char * outData = malloc(fileSize);	
+		
+		// this where we actually get the bytes from the file and put them
+		// into the data buffer
+		OSStatus result = noErr;
+		result = AudioFileReadBytes(fileID, false, 0, &fileSize, outData);
+		AudioFileClose(fileID); //close the file
+		if (result != 0) NSLog(@"cannot load effect: %@",fileName);
+		
+		// grab a buffer ID from openAL
+		alGenBuffers(1, &bufferID);
+		
+		// jam the audio data into the new buffer
+		// We know the bitrate, but if we didn't,
+		// use kAudioFilePropertyDataFormat to get the format, then convert it to the proper AL_FORMAT
+		alBufferData(bufferID, AL_FORMAT_STEREO16, outData, fileSize, 44100); 
+		
+		// save the buffer so I can release it later
+		// [bufferStorageArray addObject:[NSNumber numberWithUnsignedInteger:bufferID]];
+		[audioInfo setObject:[NSNumber numberWithUnsignedInteger:bufferID] forKey:kAudioInfoBufferId];
+		
+		// clean up the buffer
+		if (outData)
+		{
+			free(outData);
+			outData = NULL;
+		}		
 	
-	// jam the audio data into the new buffer
-	// We know the bitrate, but if we didn't,
-	// use kAudioFilePropertyDataFormat to get the format, then convert it to the proper AL_FORMAT
-	alBufferData(bufferID, AL_FORMAT_STEREO16, outData, fileSize, 44100); 
-	
-	// save the buffer so I can release it later
-	[bufferStorageArray addObject:[NSNumber numberWithUnsignedInteger:bufferID]];
+	}else{
+
+		NSNumber *bufferIDNumber = [audioInfo objectForKey:kAudioInfoBufferId];
+		bufferID = [bufferIDNumber unsignedIntValue];
+		
+	}
 	
 	// Create the source
 	
@@ -100,35 +130,30 @@
 	
 	if (loops) alSourcei(sourceID, AL_LOOPING, AL_TRUE);
 	
-	// store this for future use
-	[soundDictionary setObject:[NSNumber numberWithUnsignedInt:sourceID] forKey:aFile];	
-	
-	// clean up the buffer
-	if (outData)
-	{
-		free(outData);
-		outData = NULL;
-	}
-	
+	// NOTE: How do we unload audio without iterating over each number?
+		
+	return sourceID;	
 }
 
 #pragma mark Start / Stop Audio 
 
 // the main method: grab the sound ID from the library
 // and start the source playing
-- (void)playAudioNamed:(NSString*)soundKey
+//- (void)playAudioNamed:(NSString*)soundKey
+- (void)playAudioWithId:(NSUInteger)sourceID
 {
-	NSNumber * numVal = [soundDictionary objectForKey:soundKey];
-	if (numVal == nil) return;
-	NSUInteger sourceID = [numVal unsignedIntValue];
+	//NSNumber * numVal = [soundDictionary objectForKey:soundKey];
+	//if (numVal == nil) return;
+	//NSUInteger sourceID = [numVal unsignedIntValue];
 	alSourcePlay(sourceID);
 }
 
-- (void)stopAudioNamed:(NSString*)soundKey
+//- (void)stopAudioNamed:(NSString*)soundKey
+- (void)stopAudioWithId:(NSUInteger)sourceID
 {
-	NSNumber * numVal = [soundDictionary objectForKey:soundKey];
-	if (numVal == nil) return;
-	NSUInteger sourceID = [numVal unsignedIntValue];
+	//NSNumber * numVal = [soundDictionary objectForKey:soundKey];
+	//if (numVal == nil) return;
+	//NSUInteger sourceID = [numVal unsignedIntValue];
 	alSourceStop(sourceID);
 }
 
@@ -175,11 +200,13 @@
 	[soundDictionary removeAllObjects];
 	
 	// delete the buffers
-	for (NSNumber * bufferNumber in bufferStorageArray) {
+	for(NSString *audioName in soundDictionary){
+		NSMutableDictionary *audioInfo = [soundDictionary objectForKey:audioName];
+		NSNumber *bufferNumber = [audioInfo objectForKey:kAudioInfoBufferId];
 		NSUInteger bufferID = [bufferNumber unsignedIntegerValue];
 		alDeleteBuffers(1, &bufferID);
 	}
-	[bufferStorageArray removeAllObjects];
+	//[bufferStorageArray removeAllObjects];
 	
 	// destroy the context
 	alcDestroyContext(oalContext);
@@ -194,9 +221,18 @@
 	//[oalContext release];
 	//[oalDevice release];	
 	[self cleanUpOpenAL:nil];
-	[bufferStorageArray release];
+	//[bufferStorageArray release];
 	[soundDictionary release];
 	[super dealloc];
+}
+
++ (OALAudioController *)sharedAudioController
+{
+	static OALAudioController *sharedController;
+	if(sharedController == nil){
+		sharedController = [[OALAudioController alloc] init];
+	}
+	return sharedController;
 }
 
 @end

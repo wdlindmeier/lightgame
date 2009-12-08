@@ -9,10 +9,11 @@
 #import "Triangle.h"
 #import "GlobalFunctions.h"
 #import "Vec3f.h"
+#import "OALAudioController.h"
 
 @implementation Triangle
 
-@synthesize a, b, c, intersected, size, origin, rotation;
+@synthesize a, b, c, intersected, size, origin, rotation, singing;
 
 - (id)initWithOrigin:(CGPoint)anOrigin size:(float)aSize rotation:(float)aRotation
 {
@@ -25,6 +26,10 @@
 		b = [[Vec3f alloc] initWithX:anOrigin.x - halfSize y:anOrigin.y - (height*0.33) z:0.0];
 		c = [[Vec3f alloc] initWithX:anOrigin.x + halfSize y:anOrigin.y - (height*0.33) z:0.0];
 		self.rotation = aRotation;
+		
+		// Load a random sound and store the source
+		NSString *audioFileName = [NSString stringWithFormat:@"%i", (arc4random() % 7) + 1];
+		soundId = [[OALAudioController sharedAudioController] loadAudioNamed:audioFileName loops:NO];
 	}
 	return self;
 }
@@ -57,6 +62,18 @@
 		c.x = self.origin.x + cxy.x;
 		c.y = self.origin.y + cxy.y;
 	}
+}
+
+- (void)setSinging:(BOOL)isSinging
+{
+	if(singing != isSinging){
+		singing = isSinging;
+		if(singing){
+			[[OALAudioController sharedAudioController] playAudioWithId:soundId];
+		}else{
+			[[OALAudioController sharedAudioController] stopAudioWithId:soundId];
+		}
+	}	
 }
 
 - (NSArray *)points

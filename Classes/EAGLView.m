@@ -10,7 +10,7 @@
 #import "Photon.h"
 #import "Vec3f.h"
 #import "Triangle.h"
-#import "OALAudioController.h"
+//#import "OALAudioController.h"
 
 #define USE_DEPTH_BUFFER 0
 
@@ -80,11 +80,11 @@ const int MAX_REFLECTION = 100;
 			displayLinkSupported = TRUE;
 		
 		
-		audioController = [[OALAudioController alloc] init];
+		/*audioController = [[OALAudioController alloc] init];
 		[audioController loadAudioNamed:@"1" loops:NO];
 		[audioController loadAudioNamed:@"2" loops:NO];
 		[audioController loadAudioNamed:@"3" loops:NO];
-		[audioController playAudioNamed:@"1"];
+		//[audioController playAudioNamed:@"1"];*/
 		
 		[self setupView];
 		[self setupScene];
@@ -130,6 +130,8 @@ const int MAX_REFLECTION = 100;
 {
 	Photon *p = [lightPoints objectAtIndex:0];
 	[p retain];
+	// Slowly rotate the beam
+	p.angle += 0.5;	
 	[self calculatePathStartingWithPhoton:p];
 	[p release];
 }
@@ -228,6 +230,26 @@ const int MAX_REFLECTION = 100;
 
 		[intersections release];
 	}
+	
+	// Tell them to sing
+	// TODO: Each sound should belong to the object
+	// and they shouldn't be mutually exclusive
+	//for(int i=0;i<[obstructions count];i++){
+	for(Triangle *triangle in obstructions){			
+		//Triangle *triangle = [obstructions objectAtIndex:i];
+		if(triangle.intersected){
+			if(!triangle.singing){
+				triangle.singing = YES;
+				//[audioController playAudioNamed:[NSString stringWithFormat:@"%i", (i%3)+1]];
+			}
+		}else{
+			if(triangle.singing){
+				triangle.singing = NO;
+				//[audioController stopAudioNamed:[NSString stringWithFormat:@"%i", (i%3)+1]];
+			}
+		}
+	}			
+	
 }
 
 #pragma mark Drawing
@@ -261,10 +283,10 @@ const int MAX_REFLECTION = 100;
 		NSLog(@"No obstructions");
 	}
 		
-/*	
+
 	// Slowly rotating the ray
-	Photon *p = [lightPoints objectAtIndex:0];
-	// p.angle += 0.5;	
+/*	Photon *p = [lightPoints objectAtIndex:0];
+	p.angle += 0.5;	
 	[p retain];
 	[self calculatePathStartingWithPhoton:p];	
 	[p release];

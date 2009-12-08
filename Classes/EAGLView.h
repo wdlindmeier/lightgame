@@ -13,7 +13,7 @@
 #import <OpenGLES/ES1/glext.h>
 #import "GlobalFunctions.h"
 
-@class OALAudioController;
+//@class OALAudioController;
 
 @interface EAGLView : UIView
 {    
@@ -38,7 +38,7 @@
 	NSMutableArray	*lightPoints;
 	NSMutableArray	*obstructions;
 	
-	OALAudioController *audioController;
+	//OALAudioController *audioController;
 }
 
 @property (readonly, nonatomic, getter=isAnimating) BOOL animating;
