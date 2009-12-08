@@ -13,7 +13,7 @@
 
 @implementation Triangle
 
-@synthesize a, b, c, intersected, size, origin, rotation, singing;
+@synthesize a, b, c, intersected, size, origin, rotation, singing, pitch;
 
 - (id)initWithOrigin:(CGPoint)anOrigin size:(float)aSize rotation:(float)aRotation
 {
@@ -30,6 +30,8 @@
 		// Load a random sound and store the source
 		NSString *audioFileName = [NSString stringWithFormat:@"%i", (arc4random() % 7) + 1];
 		soundId = [[OALAudioController sharedAudioController] loadAudioNamed:audioFileName loops:NO];
+		pitch = 1.0;
+		
 	}
 	return self;
 }
@@ -74,6 +76,12 @@
 			[[OALAudioController sharedAudioController] stopAudioWithId:soundId];
 		}
 	}	
+}
+
+- (void)setPitch:(float)aPitch
+{
+	pitch = aPitch;
+	[[OALAudioController sharedAudioController] adjustPitch:aPitch forSoundId:soundId];
 }
 
 - (NSArray *)points

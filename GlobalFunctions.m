@@ -98,18 +98,19 @@ Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 		int ix = v1x1 + ((int)(ua * (v1x2 - v1x1))>>14);
 		int iy = v1y1 + ((int)(ua * (v1y2 - v1y1))>>14);
 		
-		//		int xDist = ix - v1x1;
-		//		int yDist = iy - v1y1;
-		//		int iDist = sqrt((xDist*xDist) + (yDist*yDist));
-		//		if(iDist > 1){		
 		return [[[Vec3f alloc] initWithX:ix
 									   y:iy
 									   z:0.0] autorelease];
-		//		}else{
-		//			NSLog(@"ix: %i iy: %i iDist: %i", ix, iy, iDist);
-		//		}
     }
     return nil;
+}
+
+float distanceBetweenPoints(CGPoint a, CGPoint b)
+{
+	float xDist = abs(a.x - b.x);
+	float yDist = abs(a.y - b.y);
+	float dist = sqrtf((xDist*xDist) + (yDist*yDist));
+	return dist;
 }
 
 

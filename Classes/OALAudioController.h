@@ -22,13 +22,10 @@
 
 - (void)initOpenAL;
 - (void)cleanUpOpenAL:(id)sender;
-//- (void)loadAudioNamed:(NSString *)filename loops:(BOOL)loops;
-//- (NSString *)loadAudioNamed:(NSString *)fileName loops:(BOOL)loops;
 - (NSUInteger)loadAudioNamed:(NSString *)aFile loops:(BOOL)loops;
-//- (void)playAudioNamed:(NSString*)soundKey;
 - (void)playAudioWithId:(NSUInteger)soundId;
-//- (void)stopAudioNamed:(NSString*)soundKey;
 - (void)stopAudioWithId:(NSUInteger)soundId;
+- (void)adjustPitch:(float)aPitch forSoundId:(NSUInteger)soundId;
 
 + (OALAudioController *)sharedAudioController;
 

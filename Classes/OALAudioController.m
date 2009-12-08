@@ -137,24 +137,19 @@
 
 #pragma mark Start / Stop Audio 
 
-// the main method: grab the sound ID from the library
-// and start the source playing
-//- (void)playAudioNamed:(NSString*)soundKey
 - (void)playAudioWithId:(NSUInteger)sourceID
 {
-	//NSNumber * numVal = [soundDictionary objectForKey:soundKey];
-	//if (numVal == nil) return;
-	//NSUInteger sourceID = [numVal unsignedIntValue];
 	alSourcePlay(sourceID);
 }
 
-//- (void)stopAudioNamed:(NSString*)soundKey
 - (void)stopAudioWithId:(NSUInteger)sourceID
 {
-	//NSNumber * numVal = [soundDictionary objectForKey:soundKey];
-	//if (numVal == nil) return;
-	//NSUInteger sourceID = [numVal unsignedIntValue];
 	alSourceStop(sourceID);
+}
+
+- (void)adjustPitch:(float)aPitch forSoundId:(NSUInteger)soundId
+{
+	alSourcef(soundId, AL_PITCH, aPitch);
 }
 
 #pragma mark Audio Util 

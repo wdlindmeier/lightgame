@@ -15,3 +15,4 @@
 CGPoint rotateXYDegrees(float x, float y, float d);
 Vec3f * areIntersecting(float v1x1, float v1y1, float v1x2, float v1y2,
 						float v2x1, float v2y1, float v2x2, float v2y2);
+float distanceBetweenPoints(CGPoint a, CGPoint b);

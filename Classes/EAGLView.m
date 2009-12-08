@@ -80,12 +80,6 @@ const int MAX_REFLECTION = 100;
 			displayLinkSupported = TRUE;
 		
 		
-		/*audioController = [[OALAudioController alloc] init];
-		[audioController loadAudioNamed:@"1" loops:NO];
-		[audioController loadAudioNamed:@"2" loops:NO];
-		[audioController loadAudioNamed:@"3" loops:NO];
-		//[audioController playAudioNamed:@"1"];*/
-		
 		[self setupView];
 		[self setupScene];
 				
@@ -96,27 +90,8 @@ const int MAX_REFLECTION = 100;
 
 - (void)setupScene
 {	
-	//float obstructionSize = 20.0;
-//	int numObstructions = 60; //arc4random() % 50;
-//	obstructions = [[NSMutableArray alloc] initWithCapacity:numObstructions];
 	obstructions = [[NSMutableArray alloc] init];
-/*
-	for(int i=0;i<numObstructions;i++){
-		int initX = (arc4random() % 320) - 160;
-		int initY = (arc4random() % 480) - 240;
-		Triangle *t = [[Triangle alloc] initWithAx:initX
-												aY:initY
-												aZ:0.0 
-												bx:initX-(obstructionSize*0.5)
-												bY:initY-obstructionSize
-												bZ:0.0 
-												cx:initX+(obstructionSize*0.5)
-												cY:initY-obstructionSize
-												cZ:0.0];
-		[obstructions addObject:t];	
-		[t release];
-	}
-*/	
+	
 	Photon *p = [[Photon alloc] initWithX:0.0
 										y:0.0
 										z:0.0];
@@ -207,12 +182,20 @@ const int MAX_REFLECTION = 100;
 				if(dist < pointDistance){
 					// This intersection is closer than the other intersections tested
 					closestIntersection = i;
-					pointDistance = dist;
+					pointDistance = dist;					
 				}
 			}	
 						
 			Triangle *iTriangle = closestIntersection.triangle;
 			iTriangle.intersected = YES;
+			
+			// Use the distance from the intersection to the triangle's origin
+			// to affect the pitch
+			float distFromOrigin = distanceBetweenPoints(CGPointMake(closestIntersection.x, closestIntersection.y), 
+														 iTriangle.origin);
+
+			iTriangle.pitch = 0.10/distFromOrigin * iTriangle.size;
+
 			p1 = [[Photon alloc] initWithX:closestIntersection.x y:closestIntersection.y z:closestIntersection.z];
 			p1.angle = closestIntersection.angle;
 			p1.triangle = iTriangle;
@@ -232,20 +215,14 @@ const int MAX_REFLECTION = 100;
 	}
 	
 	// Tell them to sing
-	// TODO: Each sound should belong to the object
-	// and they shouldn't be mutually exclusive
-	//for(int i=0;i<[obstructions count];i++){
 	for(Triangle *triangle in obstructions){			
-		//Triangle *triangle = [obstructions objectAtIndex:i];
 		if(triangle.intersected){
 			if(!triangle.singing){
 				triangle.singing = YES;
-				//[audioController playAudioNamed:[NSString stringWithFormat:@"%i", (i%3)+1]];
 			}
 		}else{
 			if(triangle.singing){
 				triangle.singing = NO;
-				//[audioController stopAudioNamed:[NSString stringWithFormat:@"%i", (i%3)+1]];
 			}
 		}
 	}			
@@ -266,31 +243,12 @@ const int MAX_REFLECTION = 100;
 - (void) drawView:(id)sender
 {
 	
-///	Triangle *t = [obstructions lastObject];
-/*	for(int i=0;i<[obstructions count]; i++){
-		Triangle *t = [obstructions objectAtIndex:i];
-		[t retain];
-		[obstructions replaceObjectAtIndex:i withObject:[[[Triangle alloc] initWithOrigin:t.origin size:t.size rotation:t.rotation + 1.0] autorelease]];
-		//[obstructions addObject:[];
-		[t release];
-	}*/
 	for(Triangle *t in obstructions){
 		t.rotation += 1.0;
 	}
+
 	[self recalculatePath];
 	
-	if([lightPoints count] < 3){
-		NSLog(@"No obstructions");
-	}
-		
-
-	// Slowly rotating the ray
-/*	Photon *p = [lightPoints objectAtIndex:0];
-	p.angle += 0.5;	
-	[p retain];
-	[self calculatePathStartingWithPhoton:p];	
-	[p release];
-*/
 	[self beginGLDraw];
 		
 	int numPoints = [lightPoints count];

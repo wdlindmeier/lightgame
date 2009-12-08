@@ -19,6 +19,8 @@
 	float size;
 	CGPoint origin;
 	float rotation;
+	// TODO: Maybe this should be abstracted
+	float pitch;
 	NSUInteger soundId;
 	
 }
@@ -27,6 +29,7 @@
 @property (nonatomic, readonly) Vec3f *b;
 @property (nonatomic, readonly) Vec3f *c;
 @property (assign) float size;
+@property (assign) float pitch;
 @property (assign) BOOL intersected;
 @property (assign) BOOL singing;
 @property (assign) float rotation;

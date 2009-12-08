@@ -8,15 +8,17 @@
 
 #import "LightGameAppDelegate.h"
 #import "EAGLView.h"
+#import "OALAudioController.h"
 
 @implementation LightGameAppDelegate
 
 @synthesize window;
 @synthesize glView;
 
-
 - (void) applicationDidFinishLaunching:(UIApplication *)application
 {
+	// Loading up the audio controller so openAL is loaded
+	[OALAudioController sharedAudioController];
 	[glView startAnimation];
 }
 
