@@ -38,6 +38,8 @@
 	NSMutableArray	*lightPoints;
 	NSMutableArray	*obstructions;
 	
+	NSMutableDictionary *touchedObstructions;
+	
 	//OALAudioController *audioController;
 }
 

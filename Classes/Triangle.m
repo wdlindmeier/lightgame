@@ -66,6 +66,22 @@
 	}
 }
 
+- (void)setOffsetX:(float)xOffset y:(float)yOffset
+{
+	
+	//self.origin = CGPointMake(self.origin.x + xOffset, self.origin.y - yOffset);
+	
+	self.a.x = self.a.x + xOffset;
+	self.a.y = self.a.y - yOffset;
+	
+	self.b.x = self.b.x + xOffset;
+	self.b.y = self.b.y - yOffset;
+	
+	self.c.x = self.c.x + xOffset;
+	self.c.y = self.c.y - yOffset;
+	
+}
+
 - (void)setSinging:(BOOL)isSinging
 {
 	if(singing != isSinging){

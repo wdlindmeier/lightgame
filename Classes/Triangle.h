@@ -39,6 +39,8 @@
 
 - (id)initWithOrigin:(CGPoint)anOrigin size:(float)aSize rotation:(float)aRotation;
 
+- (void)setOffsetX:(float)xOffset y:(float)yOffset;
+
 /*- (id)initWithA:(Vec3f *)aVec b:(Vec3f *)bVec c:(Vec3f *)cVec;
 - (id)initWithAx:(float)aX aY:(float)aY aZ:(float)aZ 
 			  bx:(float)bX bY:(float)bY bZ:(float)bZ 

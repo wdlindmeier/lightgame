@@ -79,6 +79,7 @@ const int MAX_REFLECTION = 100;
 		if ([currSysVer compare:reqSysVer options:NSNumericSearch] != NSOrderedAscending)
 			displayLinkSupported = TRUE;
 		
+		touchedObstructions = [[NSMutableDictionary alloc] initWithCapacity:3];
 		
 		[self setupView];
 		[self setupScene];
@@ -367,7 +368,6 @@ const int MAX_REFLECTION = 100;
 	}
 	glPopMatrix();
 	
-
 	[self finishGLDraw];
 
 }
@@ -524,32 +524,82 @@ const int MAX_REFLECTION = 100;
 #pragma mark Touch events
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
-{
+{	
+	for(UITouch *touch in touches){
+		
+		NSMutableArray *touchedTriangles = [NSMutableArray array];
+				
+		// NOTE: we may have to flip or offset this to callibrate with the openGL coordinate system
+		CGPoint touchPoint = [touch locationInView:self];
+
+		for(Triangle *triangle in obstructions){
+			CGPoint trianglePoint = CGPointMake(triangle.origin.x + 160.0, -triangle.origin.y + 240.0);
+			float tDist = distanceBetweenPoints(touchPoint, trianglePoint);
+			if(tDist < triangle.size){
+				[touchedTriangles addObject:triangle];
+				NSLog(@"touched triangle %@", triangle);
+			}
+		}
+		
+		[touchedObstructions setObject:touchedTriangles forKey:@"t"]; //[touch description]];
+										
+	}
+
 }
 
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
-{
+{	
 }
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
+	
 	for(UITouch *touch in touches){
-		// Add a triangle with a double tap
+		
+		NSArray *triangles = [touchedObstructions objectForKey:@"t"];
+		[triangles retain];
+		[touchedObstructions removeObjectForKey:@"t"]; //[touch description]];
+		
+		
 		if(touch.tapCount == 2){
-			CGPoint touchPoint = [touch locationInView:self];
-			CGPoint trianglePoint = CGPointMake(touchPoint.x - 160.0, -touchPoint.y + 240.0);
-			Triangle *triangle = [[Triangle alloc] initWithOrigin:trianglePoint
-															 size:50.0 
-														 rotation:-45.0];
-			[obstructions addObject:triangle];			
-			[triangle release];
+			if([triangles count] > 0){
+				// If they double tapped on a triangle, remove it from the scene
+				for(Triangle *triangle in triangles){
+					[obstructions removeObject:triangle];			
+				}
+			}else{
+				// Add a triangle with a double tap	
+				CGPoint touchPoint = [touch locationInView:self];
+				CGPoint trianglePoint = CGPointMake(touchPoint.x - 160.0, -touchPoint.y + 240.0);
+				Triangle *triangle = [[Triangle alloc] initWithOrigin:trianglePoint
+																 size:50.0 
+															 rotation:-45.0];
+				[obstructions addObject:triangle];			
+				[triangle release];				
+			}
 			[self recalculatePath]; 
 		}
+		[triangles release];
 	}
 }
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event
 {
+	for(UITouch *touch in touches){
+		CGPoint touchPoint = [touch locationInView:self];
+		CGPoint touchPrevPoint = [touch previousLocationInView:self];
+		float xDelta = touchPoint.x - touchPrevPoint.x;
+		float yDelta = touchPoint.y - touchPrevPoint.y;
+		NSArray *triangles = [touchedObstructions objectForKey:@"t"];//[touch description]];
+		NSLog(@"triangles: %@", triangles);
+		for(Triangle *t in triangles){
+			NSLog(@"moving triangle");
+			// move their origin			
+			// CGPoint triPoint = t.origin;
+			[t setOffsetX:xDelta y:yDelta];
+			//t.origin = CGPointMake(triPoint.x + xDelta, triPoint.y + yDelta);
+		}
+	}
 }
 
 #pragma mark GL Logistics
@@ -653,6 +703,7 @@ const int MAX_REFLECTION = 100;
     [context release];  
 	//[photon release];
 	[lightPoints release];
+	[touchedObstructions release];
 	
     [super dealloc];
 }
